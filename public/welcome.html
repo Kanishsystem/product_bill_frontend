@@ -1,0 +1,379 @@
+<title>Rasi Time Center</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+  :root{
+    --paper:#fff7f4;
+    --paper-deep:#fcebe6;
+    --card:#ffffff;
+    --ink:#2a1420;
+    --ink-muted:#8a6672;
+    --accent:#e8296b;
+    --accent-2:#f9a23c;
+    --accent-deep:#8a1140;
+    --line:#f0d7dc;
+    --shadow:0 18px 40px -22px rgba(138,17,64,0.28);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#1b1013;
+      --paper-deep:#241318;
+      --card:#2a161c;
+      --ink:#faeef1;
+      --ink-muted:#c79aa6;
+      --accent:#ff5c92;
+      --accent-2:#ffb673;
+      --accent-deep:#ff8bb0;
+      --line:#3d232a;
+      --shadow:0 18px 40px -20px rgba(0,0,0,0.55);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#1b1013;
+    --paper-deep:#241318;
+    --card:#2a161c;
+    --ink:#faeef1;
+    --ink-muted:#c79aa6;
+    --accent:#ff5c92;
+    --accent-2:#ffb673;
+    --accent-deep:#ff8bb0;
+    --line:#3d232a;
+    --shadow:0 18px 40px -20px rgba(0,0,0,0.55);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{
+    font-family:'Fraunces',Georgia,'Times New Roman',serif;
+    text-wrap:balance;
+    margin:0;
+  }
+  a{color:inherit;}
+  img,svg{max-width:100%;}
+  .wrap{max-width:1080px;margin:0 auto;padding-left:1.5rem;padding-right:1.5rem;}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:1.1rem 1.5rem;
+    max-width:1080px;margin:0 auto;
+    gap:1rem;
+  }
+  .mark{
+    display:flex;flex-direction:column;line-height:1.05;
+    font-family:'Fraunces',serif;font-weight:700;
+    font-size:1.05rem;letter-spacing:0.01em;
+  }
+  .mark span:last-child{
+    font-size:0.62rem;font-weight:600;letter-spacing:0.08em;
+    color:var(--ink-muted);text-transform:uppercase;font-family:'Manrope',sans-serif;
+    margin-top:0.15rem;
+  }
+  .btn{
+    display:inline-flex;align-items:center;gap:0.5rem;
+    padding:0.7rem 1.25rem;border-radius:999px;
+    font-weight:700;font-size:0.92rem;
+    text-decoration:none;border:1.5px solid transparent;
+    transition:transform 0.18s ease, box-shadow 0.18s ease;
+    white-space:nowrap;
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn-primary{
+    background:linear-gradient(135deg,var(--accent-2),var(--accent));
+    color:#fff9f7;
+    box-shadow:var(--shadow);
+  }
+  .btn-ghost{
+    background:transparent;color:var(--ink);
+    border-color:var(--line);
+  }
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent-deep);}
+  .btn svg{width:17px;height:17px;flex:0 0 auto;}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;
+    padding:3.4rem 1.5rem 4rem;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";position:absolute;inset:0;z-index:0;
+    background:
+      radial-gradient(60% 55% at 82% 8%, color-mix(in srgb, var(--accent-2) 30%, transparent), transparent 70%),
+      radial-gradient(55% 60% at 12% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 72%);
+  }
+  .hero-inner{
+    position:relative;z-index:1;max-width:1080px;margin:0 auto;
+    display:flex;flex-direction:column;align-items:flex-start;gap:1.6rem;
+    opacity:0;transform:translateY(14px);
+    animation:rise 0.7s ease 0.05s forwards;
+  }
+  @media (prefers-reduced-motion:reduce){.hero-inner{opacity:1;transform:none;animation:none;}}
+  @keyframes rise{to{opacity:1;transform:translateY(0);}}
+  .eyebrow{
+    font-size:0.74rem;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;
+    color:var(--accent-deep);
+    display:flex;align-items:center;gap:0.5rem;
+  }
+  .eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);}
+  .hero h1{
+    font-size:clamp(2.4rem, 6vw, 4.1rem);
+    font-weight:900;
+    letter-spacing:-0.01em;
+  }
+  .hero h1 .line2{
+    display:block;
+    background:linear-gradient(100deg,var(--accent-deep),var(--accent) 55%,var(--accent-2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-size:0.52em;font-weight:700;margin-top:0.35rem;
+  }
+  .hero-tagline{
+    font-size:1.1rem;line-height:1.55;color:var(--ink-muted);max-width:46ch;
+  }
+  .hero-ctas{display:flex;flex-wrap:wrap;gap:0.85rem;margin-top:0.3rem;}
+  .chips{display:flex;flex-wrap:wrap;gap:0.6rem;margin-top:0.6rem;}
+  .chip{
+    display:inline-flex;align-items:center;gap:0.4rem;
+    font-size:0.78rem;font-weight:700;color:var(--ink-muted);
+    background:var(--card);border:1px solid var(--line);
+    padding:0.4rem 0.8rem;border-radius:999px;
+  }
+  .chip svg{width:14px;height:14px;color:var(--accent);}
+
+  /* ---------- section shell ---------- */
+  section{padding:3.4rem 0;}
+  .section-head{max-width:56ch;margin:0 0 2.1rem;}
+  .kicker{
+    font-size:0.74rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:0.5rem;display:block;
+  }
+  .section-head h2{font-size:clamp(1.6rem,3.4vw,2.15rem);font-weight:700;}
+  .section-head p{color:var(--ink-muted);margin-top:0.6rem;line-height:1.6;font-size:1rem;}
+
+  /* ---------- categories ---------- */
+  .cat-row{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1.1rem;
+  }
+  .cat-card{
+    background:var(--card);border:1px solid var(--line);border-radius:20px;
+    padding:1.5rem 1.3rem;
+    display:flex;flex-direction:column;gap:0.9rem;
+    transition:transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .cat-card:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:transparent;}
+  .cat-icon{
+    width:46px;height:46px;border-radius:13px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,color-mix(in srgb, var(--accent-2) 55%, transparent),color-mix(in srgb, var(--accent) 55%, transparent));
+    color:#fff;
+  }
+  .cat-icon svg{width:23px;height:23px;}
+  .cat-card h3{font-size:1.05rem;font-weight:700;font-family:'Manrope',sans-serif;}
+  .cat-card p{margin:0;font-size:0.88rem;color:var(--ink-muted);line-height:1.5;}
+
+  /* ---------- why us ---------- */
+  .why-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1.3rem;}
+  .why-card{
+    padding:1.6rem;border-radius:18px;
+    background:var(--paper-deep);
+  }
+  .why-num{
+    font-family:'Fraunces',serif;font-weight:700;font-size:1.6rem;color:var(--accent);
+    margin-bottom:0.5rem;display:block;
+  }
+  .why-card h3{font-size:1.08rem;font-weight:700;font-family:'Manrope',sans-serif;margin-bottom:0.5rem;}
+  .why-card p{margin:0;color:var(--ink-muted);font-size:0.92rem;line-height:1.6;}
+
+  /* ---------- visit ---------- */
+  .visit{
+    background:var(--paper-deep);border-radius:28px;
+    padding:2.6rem 2.2rem;
+    display:grid;grid-template-columns:1.1fr 0.9fr;gap:2.4rem;align-items:center;
+  }
+  .visit-info h2{font-size:clamp(1.5rem,3vw,1.9rem);margin-bottom:1rem;}
+  .info-row{display:flex;gap:0.85rem;margin-bottom:1.1rem;align-items:flex-start;}
+  .info-row svg{width:20px;height:20px;color:var(--accent);flex:0 0 auto;margin-top:0.15rem;}
+  .info-row div{font-size:0.96rem;line-height:1.55;}
+  .info-row .label{
+    font-size:0.72rem;font-weight:800;letter-spacing:0.09em;text-transform:uppercase;
+    color:var(--ink-muted);display:block;margin-bottom:0.15rem;
+  }
+  .visit-ctas{display:flex;gap:0.8rem;flex-wrap:wrap;margin-top:1.4rem;}
+  .map-card{
+    border-radius:20px;border:1px solid var(--line);
+    background:var(--card);
+    padding:1.8rem;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:0.9rem;text-align:center;min-height:220px;
+  }
+  .pin-badge{
+    width:64px;height:64px;border-radius:50%;
+    background:linear-gradient(135deg,var(--accent-2),var(--accent));
+    display:flex;align-items:center;justify-content:center;color:#fff;
+    box-shadow:var(--shadow);
+  }
+  .pin-badge svg{width:30px;height:30px;}
+  .map-card p{margin:0;font-size:0.88rem;color:var(--ink-muted);max-width:26ch;}
+
+  /* ---------- footer ---------- */
+  footer{
+    border-top:1px solid var(--line);
+    padding:2.2rem 0 2.6rem;
+  }
+  .foot-row{
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:1.5rem;
+  }
+  .foot-mark{font-family:'Fraunces',serif;font-weight:700;font-size:1rem;}
+  .foot-mark span{display:block;font-size:0.68rem;font-weight:600;color:var(--ink-muted);
+    text-transform:uppercase;letter-spacing:0.07em;margin-top:0.2rem;font-family:'Manrope',sans-serif;}
+  .foot-meta{font-size:0.84rem;color:var(--ink-muted);line-height:1.7;text-align:right;}
+
+  @media (max-width:860px){
+    .cat-row{grid-template-columns:repeat(2,1fr);}
+    .why-row{grid-template-columns:1fr;}
+    .visit{grid-template-columns:1fr;padding:2rem 1.4rem;border-radius:22px;}
+    .foot-row{flex-direction:column;}
+    .foot-meta{text-align:left;}
+  }
+  @media (max-width:520px){
+    .cat-row{grid-template-columns:1fr 1fr;gap:0.8rem;}
+    .topbar{padding:1rem 1.2rem;}
+    .hero{padding:2.4rem 1.2rem 3rem;}
+    .btn{padding:0.65rem 1.1rem;font-size:0.86rem;}
+  }
+</style>
+
+<header class="topbar">
+  <div class="mark">
+    <span>Rasi Time Center</span>
+    <span>Mobiles &amp; Home Appliances</span>
+  </div>
+  <a class="btn btn-primary" href="tel:+918526131313">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92Z"/></svg>
+    Call Now
+  </a>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-inner">
+      <span class="eyebrow">Marakkanam, Tamil Nadu</span>
+      <h1>RASI TIME CENTER<span class="line2">Mobiles &amp; Home Appliances</span></h1>
+      <p class="hero-tagline">Genuine phones, TVs and everyday home appliances for the neighbourhood — every purchase billed with a proper GST invoice, no shortcuts.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="tel:+918526131313">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92Z"/></svg>
+          8526131313
+        </a>
+        <a class="btn btn-ghost" href="https://www.google.com/maps/search/?api=1&query=No.5%2F2%2C%20Pondy%20Road%2C%20Marakkanam%20-%20604303%2C%20Tamil%20Nadu" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6.5-9 12-9 12s-9-5.5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          Get Directions
+        </a>
+      </div>
+      <div class="chips">
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>GSTIN 33BEVPR0802PIZY</span>
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>GST invoice on every sale</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <div class="section-head">
+      <span class="kicker">What we stock</span>
+      <h2>One shop for phones, screens &amp; the home</h2>
+      <p>Walk in for a quick accessory or a full home-appliance purchase — the range is picked for what a Marakkanam household actually needs.</p>
+    </div>
+    <div class="cat-row">
+      <div class="cat-card">
+        <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></div>
+        <h3>Mobiles &amp; Smartphones</h3>
+        <p>Latest handsets across budgets, with IMEI-tracked billing on every unit sold.</p>
+      </div>
+      <div class="cat-card">
+        <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+        <h3>TVs &amp; Electronics</h3>
+        <p>Screens and everyday electronics, set up and explained before you leave the counter.</p>
+      </div>
+      <div class="cat-card">
+        <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><path d="M8 6h.01M12 6h.01"/></svg></div>
+        <h3>Home Appliances</h3>
+        <p>Fans, mixers, washing machines and more — the everyday machines a home runs on.</p>
+      </div>
+      <div class="cat-card">
+        <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14a9 9 0 0 1 18 0"/><path d="M21 14v4a2 2 0 0 1-2 2h-1v-7h3ZM3 14v4a2 2 0 0 0 2 2h1v-7H3Z"/></svg></div>
+        <h3>Accessories &amp; More</h3>
+        <p>Chargers, cases, cables and the small parts you come back for.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <div class="section-head">
+      <span class="kicker">Why Rasi Time Center</span>
+      <h2>Straightforward, in writing</h2>
+    </div>
+    <div class="why-row">
+      <div class="why-card">
+        <h3>Every sale, billed properly</h3>
+        <p>A GST tax invoice for every purchase — the paperwork you need for warranty claims is handed to you at the counter, not chased down later.</p>
+      </div>
+      <div class="why-card">
+        <h3>One stop, less running around</h3>
+        <p>From a phone charger to a new washing machine, it's one shop and one familiar face behind the counter.</p>
+      </div>
+      <div class="why-card">
+        <h3>Clear pricing, no surprises</h3>
+        <p>Every bill shows the GST breakdown plainly, so the total you're quoted is the total you pay.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <div class="visit">
+      <div class="visit-info">
+        <h2>Visit the store</h2>
+        <div class="info-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6.5-9 12-9 12s-9-5.5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          <div><span class="label">Address</span>No.5/2, Pondy Road, Marakkanam - 604303, Tamil Nadu</div>
+        </div>
+        <div class="info-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92Z"/></svg>
+          <div><span class="label">Phone</span>8526131313</div>
+        </div>
+        <div class="info-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <div><span class="label">Store timings</span>Call ahead to confirm today's hours.</div>
+        </div>
+        <div class="visit-ctas">
+          <a class="btn btn-primary" href="tel:+918526131313">Call the store</a>
+          <a class="btn btn-ghost" href="https://www.google.com/maps/search/?api=1&query=No.5%2F2%2C%20Pondy%20Road%2C%20Marakkanam%20-%20604303%2C%20Tamil%20Nadu" target="_blank" rel="noopener">Open in Maps</a>
+        </div>
+      </div>
+      <div class="map-card">
+        <div class="pin-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6.5-9 12-9 12s-9-5.5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <p><strong style="color:var(--ink)">Pondy Road, Marakkanam</strong><br>Tap "Get Directions" to open the route in Google Maps.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <div class="foot-row">
+    <div class="foot-mark">
+      Rasi Time Center
+      <span>Mobiles &amp; Home Appliances</span>
+    </div>
+    <div class="foot-meta">
+      No.5/2, Pondy Road, Marakkanam - 604303, Tamil Nadu<br>
+      8526131313 · GSTIN 33BEVPR0802PIZY
+    </div>
+  </div>
+</footer>

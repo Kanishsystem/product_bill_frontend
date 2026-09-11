@@ -1,0 +1,206 @@
+<div class="page-header">
+  <div>
+    <h1>{{ party()?.name || 'Party' }}</h1>
+    <p class="page-subtitle">
+      {{ party()?.party_type === 'supplier' ? 'Purchase and payment history' : 'Sales and payment history' }}
+    </p>
+  </div>
+  <div class="header-actions">
+    @if (party(); as p) {
+      <a [routerLink]="['/parties', p.id, 'edit']" class="btn btn-secondary">Edit</a>
+    }
+    <a routerLink="/parties" class="btn btn-secondary">Back to list</a>
+  </div>
+</div>
+
+@if (loading()) {
+  <p class="loading-text">Loading...</p>
+} @else if (party(); as p) {
+  <div class="card summary-card">
+    <div class="summary-grid">
+      <div>
+        <span class="summary-label">Phone</span>
+        <span class="summary-value">{{ p.phone || '—' }}</span>
+      </div>
+      <div>
+        <span class="summary-label">Email</span>
+        <span class="summary-value">{{ p.email || '—' }}</span>
+      </div>
+      <div>
+        <span class="summary-label">GSTIN</span>
+        <span class="summary-value">{{ p.gstin || '—' }}</span>
+      </div>
+      <div>
+        <span class="summary-label">State</span>
+        <span class="summary-value">
+          {{ p.state || '—' }}
+          @if (p.state_code) {
+            <span class="badge badge-neutral">{{ p.state_code }}</span>
+          }
+        </span>
+      </div>
+      <div>
+        <span class="summary-label">Address</span>
+        <span class="summary-value">{{ p.address || '—' }}</span>
+      </div>
+    </div>
+
+    @if (totalOutstanding() > 0) {
+      <div class="outstanding-banner">
+        Total outstanding: <strong>₹{{ totalOutstanding() | number: '1.2-2' }}</strong>
+      </div>
+    }
+  </div>
+
+  @if (historyLoading()) {
+    <p class="loading-text">Loading history...</p>
+  } @else if (p.party_type === 'customer') {
+    <div class="card">
+      <h2 class="card-title">Sales History <span class="badge-count">{{ sales().length }}</span></h2>
+      @if (sales().length === 0) {
+        <app-empty-state icon="sales" title="No sales recorded for this customer yet"></app-empty-state>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Invoice No</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Paid</th>
+                <th>Balance Due</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (inv of sales(); track inv.id) {
+                <tr [class.row-critical]="num(inv.balance_due) > 0">
+                  <td data-label="Invoice No" class="cell-strong">{{ inv.invoice_no }}</td>
+                  <td data-label="Date">{{ inv.invoice_date }}</td>
+                  <td data-label="Total">₹{{ num(inv.total_amount) | number: '1.2-2' }}</td>
+                  <td data-label="Paid">₹{{ num(inv.amount_paid) | number: '1.2-2' }}</td>
+                  <td data-label="Balance Due">₹{{ num(inv.balance_due) | number: '1.2-2' }}</td>
+                  <td data-label="Status">
+                    <span class="badge badge-neutral">{{ inv.status }}</span>
+                  </td>
+                  <td class="cell-actions">
+                    <a [routerLink]="['/sales', inv.id]" class="icon-link" title="View invoice">
+                      <app-icon name="eye" [size]="16"></app-icon>
+                    </a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Payment History <span class="badge-count">{{ salesPayments().length }}</span></h2>
+      @if (salesPayments().length === 0) {
+        <app-empty-state icon="cart" title="No payments recorded for this customer yet"></app-empty-state>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Invoice No</th>
+                <th>Amount</th>
+                <th>Mode</th>
+                <th>Note</th>
+                <th>Recorded By</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pay of salesPayments(); track pay.id) {
+                <tr>
+                  <td data-label="Date">{{ pay.received_at }}</td>
+                  <td data-label="Invoice No">{{ pay.invoice_no }}</td>
+                  <td data-label="Amount" class="cell-strong">₹{{ num(pay.amount) | number: '1.2-2' }}</td>
+                  <td data-label="Mode">{{ pay.payment_mode }}</td>
+                  <td data-label="Note">{{ pay.note || '—' }}</td>
+                  <td data-label="Recorded By">{{ pay.received_by_name || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="card">
+      <h2 class="card-title">Purchase History <span class="badge-count">{{ purchases().length }}</span></h2>
+      @if (purchases().length === 0) {
+        <app-empty-state icon="purchase" title="No purchases recorded for this supplier yet"></app-empty-state>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Invoice No</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Paid</th>
+                <th>Balance Due</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pur of purchases(); track pur.id) {
+                <tr [class.row-critical]="num(pur.balance_due) > 0">
+                  <td data-label="Invoice No" class="cell-strong">{{ pur.supplier_invoice_no }}</td>
+                  <td data-label="Date">{{ pur.purchase_date }}</td>
+                  <td data-label="Total">₹{{ num(pur.total_amount) | number: '1.2-2' }}</td>
+                  <td data-label="Paid">₹{{ num(pur.amount_paid) | number: '1.2-2' }}</td>
+                  <td data-label="Balance Due">₹{{ num(pur.balance_due) | number: '1.2-2' }}</td>
+                  <td class="cell-actions">
+                    <a [routerLink]="['/purchases', pur.id]" class="icon-link" title="View purchase">
+                      <app-icon name="eye" [size]="16"></app-icon>
+                    </a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Payment History <span class="badge-count">{{ purchasePayments().length }}</span></h2>
+      @if (purchasePayments().length === 0) {
+        <app-empty-state icon="purchase" title="No payments recorded for this supplier yet"></app-empty-state>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Invoice No</th>
+                <th>Amount</th>
+                <th>Mode</th>
+                <th>Note</th>
+                <th>Recorded By</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pay of purchasePayments(); track pay.id) {
+                <tr>
+                  <td data-label="Date">{{ pay.paid_at }}</td>
+                  <td data-label="Invoice No">{{ pay.supplier_invoice_no }}</td>
+                  <td data-label="Amount" class="cell-strong">₹{{ num(pay.amount) | number: '1.2-2' }}</td>
+                  <td data-label="Mode">{{ pay.payment_mode }}</td>
+                  <td data-label="Note">{{ pay.note || '—' }}</td>
+                  <td data-label="Recorded By">{{ pay.paid_by_name || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+}

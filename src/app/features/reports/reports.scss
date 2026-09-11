@@ -1,0 +1,190 @@
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+
+  h1 {
+    margin: 0 0 0.2rem;
+    font-size: 1.3rem;
+  }
+}
+
+.page-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  max-width: 70ch;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+
+  button {
+    border: none;
+    background: none;
+    padding: 0.6rem 1rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+
+    &.active {
+      color: var(--brand-dark);
+      border-bottom-color: var(--brand);
+    }
+  }
+}
+
+.filter-bar {
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .field {
+    margin-bottom: 0;
+  }
+}
+
+.loading-text {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+// Every section on this page is its own .card stacked one after another
+// (grouped table, invoice list, GST cards, etc) - give each one breathing
+// room instead of butting straight into the next.
+.card {
+  margin-bottom: 1.25rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.summary-card {
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  &.total {
+    border-color: var(--brand);
+    background: var(--brand-light);
+  }
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.summary-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.cell-strong {
+  font-weight: 600;
+}
+
+.table-title {
+  margin: 0 0 0.75rem;
+  padding: 0 0.1rem;
+  font-size: 0.95rem;
+}
+
+.table-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.empty-cell {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 1.2rem;
+}
+
+.row-cancelled {
+  opacity: 0.6;
+
+  td {
+    text-decoration: line-through;
+  }
+
+  .status-badge {
+    text-decoration: none;
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: var(--border);
+  color: var(--text-muted);
+
+  &.status-completed {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
+  &.status-cancelled {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+
+  &.status-returned,
+  &.status-partially_returned {
+    background: #fef3c7;
+    color: #92400e;
+  }
+}
+
+.gst-card {
+  padding: 1.1rem 1.3rem;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0 0 0.9rem;
+    font-size: 1rem;
+  }
+}
+
+.gst-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  font-size: 0.9rem;
+
+  .gst-total {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--brand-dark);
+  }
+}

@@ -1,0 +1,148 @@
+<div class="page-header">
+  <div>
+    <h1>Shop Settings</h1>
+    <p class="page-subtitle">Printed on every invoice and used to work out CGST/SGST vs IGST.</p>
+  </div>
+</div>
+
+@if (!loading()) {
+  <form class="card settings-form" (ngSubmit)="save()">
+    <h2>Shop identity</h2>
+    <div class="grid-2">
+      <div class="field">
+        <label for="shop_name">Shop name</label>
+        <textarea
+          id="shop_name"
+          name="shop_name"
+          rows="2"
+          [(ngModel)]="form.shop_name"
+          required
+        ></textarea>
+        <p class="field-hint">Press Enter to split it across two lines on the printed invoice, e.g. "RASI TIME CENTER" / "MOBILES & HOME APPLIANCES".</p>
+      </div>
+      <div class="field">
+        <label for="gstin">GSTIN</label>
+        <input id="gstin" name="gstin" type="text" [(ngModel)]="form.gstin" required />
+      </div>
+      <div class="field">
+        <label for="phone">Phone</label>
+        <input id="phone" name="phone" type="text" [(ngModel)]="form.phone" />
+      </div>
+      <div class="field">
+        <label for="invoice_prefix">Invoice prefix</label>
+        <input id="invoice_prefix" name="invoice_prefix" type="text" [(ngModel)]="form.invoice_prefix" />
+      </div>
+    </div>
+    <div class="field">
+      <label for="address">Address</label>
+      <textarea id="address" name="address" rows="2" [(ngModel)]="form.address"></textarea>
+    </div>
+
+    <h2>Invoice heading</h2>
+    <div class="field header-image-field">
+      <label for="header_image">Heading image</label>
+      <p class="field-hint">
+        Upload a custom banner/logo image to print at the top of the Tax Invoice instead of the plain shop
+        name/address text above. Leave this empty to keep printing the text heading. PNG, JPG, or WEBP, up to 2 MB.
+      </p>
+      @if (headerImageUrl(); as imgUrl) {
+        <div class="header-image-preview">
+          <img [src]="imgUrl" alt="Current invoice heading image" />
+          <button type="button" class="btn btn-secondary" [disabled]="uploadingHeaderImage()" (click)="removeHeaderImage()">
+            {{ uploadingHeaderImage() ? 'Removing...' : 'Remove image' }}
+          </button>
+        </div>
+      } @else {
+        <input
+          id="header_image"
+          name="header_image"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          [disabled]="uploadingHeaderImage()"
+          (change)="onHeaderImageSelected($event)"
+        />
+        @if (uploadingHeaderImage()) {
+          <p class="field-hint">Uploading...</p>
+        }
+      }
+    </div>
+
+    <h2>Appearance</h2>
+    <div class="theme-row">
+      <div class="field theme-picker-field">
+        <label for="theme_color">Theme color</label>
+        <div class="theme-picker">
+          <input
+            id="theme_color"
+            name="theme_color"
+            type="color"
+            class="theme-swatch-input"
+            [ngModel]="form.theme_color"
+            (ngModelChange)="previewTheme($event)"
+          />
+          <span class="theme-hex">{{ form.theme_color }}</span>
+          <button type="button" class="theme-reset-btn" (click)="resetTheme()">Reset to default</button>
+        </div>
+        <p class="field-hint">
+          Applied across the whole app - buttons, menu highlights - and the printed invoice's accent color.
+        </p>
+      </div>
+      <div class="theme-presets">
+        @for (preset of themePresets; track preset.color) {
+          <button
+            type="button"
+            class="theme-preset-swatch"
+            [class.active]="form.theme_color === preset.color"
+            [style.background]="preset.color"
+            [title]="preset.label"
+            (click)="previewTheme(preset.color)"
+          ></button>
+        }
+      </div>
+    </div>
+
+    <h2>Bank details</h2>
+    <div class="grid-2">
+      <div class="field">
+        <label for="bank_account_name">Account name</label>
+        <input id="bank_account_name" name="bank_account_name" type="text" [(ngModel)]="form.bank_account_name" />
+      </div>
+      <div class="field">
+        <label for="bank_name">Bank name</label>
+        <input id="bank_name" name="bank_name" type="text" [(ngModel)]="form.bank_name" />
+      </div>
+      <div class="field">
+        <label for="bank_account_no">Account number</label>
+        <input id="bank_account_no" name="bank_account_no" type="text" [(ngModel)]="form.bank_account_no" />
+      </div>
+      <div class="field">
+        <label for="ifsc_code">IFSC code</label>
+        <input id="ifsc_code" name="ifsc_code" type="text" [(ngModel)]="form.ifsc_code" />
+      </div>
+    </div>
+
+    <h2>Invoice footer</h2>
+    <div class="field">
+      <label for="terms_and_conditions">Terms &amp; conditions</label>
+      <textarea
+        id="terms_and_conditions"
+        name="terms_and_conditions"
+        rows="4"
+        [(ngModel)]="form.terms_and_conditions"
+      ></textarea>
+    </div>
+    <div class="field">
+      <label for="default_warranty_text">Default warranty text</label>
+      <textarea
+        id="default_warranty_text"
+        name="default_warranty_text"
+        rows="2"
+        [(ngModel)]="form.default_warranty_text"
+      ></textarea>
+    </div>
+
+    <button class="btn btn-primary" type="submit" [disabled]="saving()">
+      {{ saving() ? 'Saving...' : 'Save changes' }}
+    </button>
+  </form>
+}

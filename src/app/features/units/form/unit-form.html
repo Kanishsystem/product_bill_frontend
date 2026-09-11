@@ -1,0 +1,20 @@
+<div class="page-header">
+  <div>
+    <h1>{{ unitId ? 'Edit Unit' : 'New Unit' }}</h1>
+    <p class="page-subtitle">This name shows up in the Unit dropdown on the Product and Purchase screens.</p>
+  </div>
+  <a routerLink="/units" class="btn btn-secondary">Back to list</a>
+</div>
+
+@if (!loading()) {
+  <form class="card form-card" (ngSubmit)="save()">
+    <div class="field">
+      <label for="unit_name">Unit name</label>
+      <input id="unit_name" name="unit_name" type="text" [(ngModel)]="form.unit_name" required placeholder="Samsung, LG, Bajaj..." />
+    </div>
+
+    <button class="btn btn-primary" type="submit" [disabled]="saving()">
+      {{ saving() ? 'Saving...' : unitId ? 'Save changes' : 'Create unit' }}
+    </button>
+  </form>
+}

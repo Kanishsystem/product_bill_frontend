@@ -1,0 +1,82 @@
+<div class="page-header">
+  <div>
+    <h1>Product Master</h1>
+    <p class="page-subtitle">One product list for Mobiles, Home Appliances and Accessories.</p>
+  </div>
+  <a routerLink="/products/new" class="btn btn-primary">
+    <app-icon name="plus" [size]="16"></app-icon>
+    New Product
+  </a>
+</div>
+
+<div class="card filter-bar">
+  <div class="field search-field">
+    <label>Search</label>
+    <input type="text" [(ngModel)]="search" (ngModelChange)="load()" placeholder="Name, brand, HSN or barcode..." />
+  </div>
+  <div class="field">
+    <label>Category</label>
+    <select [(ngModel)]="categoryFilter" (ngModelChange)="load()">
+      <option [ngValue]="''">All categories</option>
+      @for (cat of categories(); track cat.id) {
+        <option [ngValue]="cat.id">{{ cat.category_name }}</option>
+      }
+    </select>
+  </div>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <p class="loading-text">Loading...</p>
+  } @else if (products().length === 0) {
+    <app-empty-state
+      icon="products"
+      title="No products found"
+      subtitle="Add a product, or clear your search/filter."
+    ></app-empty-state>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th>Brand</th>
+            <th>HSN/SAC</th>
+            <th>Barcode</th>
+            <th>Selling Price</th>
+            <th>GST %</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of products(); track p.id) {
+            <tr>
+              <td data-label="Product" class="cell-strong">{{ p.name }}</td>
+              <td data-label="Category">{{ p.category_name }}</td>
+              <td data-label="Brand">{{ p.brand_name || '—' }}</td>
+              <td data-label="HSN/SAC">{{ p.hsn_sac_code }}</td>
+              <td data-label="Barcode">{{ p.barcode || '—' }}</td>
+              <td data-label="Selling Price">&#8377;{{ p.selling_price }}</td>
+              <td data-label="GST %">{{ p.tax_rate }}%</td>
+              <td data-label="Status">
+                <span class="badge" [class.badge-success]="p.status === 'active'" [class.badge-neutral]="p.status !== 'active'">
+                  {{ p.status }}
+                </span>
+              </td>
+              <td class="cell-actions">
+                <a [routerLink]="['/products', p.id, 'edit']" class="icon-link" title="Edit">
+                  <app-icon name="edit" [size]="16"></app-icon>
+                </a>
+                <button type="button" class="icon-link danger" title="Delete" (click)="remove(p)">
+                  <app-icon name="trash" [size]="16"></app-icon>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

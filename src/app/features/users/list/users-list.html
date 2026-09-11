@@ -1,0 +1,78 @@
+<div class="page-header">
+  <div>
+    <h1>Users &amp; Roles</h1>
+    <p class="page-subtitle">Admin has full access. Cashier can bill and view stock. Inventory Manager handles purchase and stock, not billing.</p>
+  </div>
+  <a routerLink="/users/new" class="btn btn-primary">
+    <app-icon name="plus" [size]="16"></app-icon>
+    New User
+  </a>
+</div>
+
+<div class="card filter-bar">
+  <div class="field search-field">
+    <label>Search</label>
+    <input type="text" [(ngModel)]="search" (ngModelChange)="load()" placeholder="Name or email..." />
+  </div>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <p class="loading-text">Loading...</p>
+  } @else if (users().length === 0) {
+    <app-empty-state icon="users" title="No users yet"></app-empty-state>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users(); track user.id) {
+            <tr>
+              <td data-label="Name" class="cell-strong">
+                {{ user.name }}
+                @if (isSelf(user)) {
+                  <span class="badge badge-neutral">You</span>
+                }
+              </td>
+              <td data-label="Email">{{ user.email }}</td>
+              <td data-label="Username">{{ user.username || '—' }}</td>
+              <td data-label="Role">
+                <span class="badge badge-neutral">{{ user.role.replace('_', ' ') }}</span>
+              </td>
+              <td data-label="Status">
+                <span class="badge" [class.badge-success]="user.status === 'active'" [class.badge-danger]="user.status === 'inactive'">
+                  {{ user.status }}
+                </span>
+              </td>
+              <td class="cell-actions">
+                <a [routerLink]="['/users', user.id, 'edit']" class="icon-link" title="Edit">
+                  <app-icon name="edit" [size]="16"></app-icon>
+                </a>
+                @if (!isSelf(user)) {
+                  <button
+                    type="button"
+                    class="icon-link"
+                    [class.danger]="user.status === 'active'"
+                    [title]="user.status === 'active' ? 'Deactivate' : 'Activate'"
+                    (click)="toggleStatus(user)"
+                  >
+                    <app-icon [name]="user.status === 'active' ? 'trash' : 'plus'" [size]="16"></app-icon>
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

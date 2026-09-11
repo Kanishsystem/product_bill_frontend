@@ -1,0 +1,380 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  /* Base size bump so every rem-based font-size across the app reads larger
+     and clearer on a counter/handheld device, without hardcoding a bigger
+     value in every component. */
+  font-size: 17px;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family:
+    'Segoe UI',
+    Roboto,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  background: #f4f6f8;
+  color: #1f2933;
+  line-height: 1.5;
+}
+
+:root {
+  --brand: #e8296b;
+  --brand-dark: #b81753;
+  --brand-darker: #8a1140;
+  --brand-light: #fce4ee;
+  --brand-gradient: linear-gradient(135deg, #f9a23c 0%, #e8296b 100%);
+  --danger: #c0392b;
+  --danger-light: #fdecea;
+  --success: #1e824c;
+  --success-light: #e7f6ec;
+  --warning: #ca8a04;
+  --warning-light: #fef3c7;
+  --border: #d7dde3;
+  --bg-panel: #ffffff;
+  --bg-app: #f4f6f8;
+  --text: #1f2933;
+  --text-muted: #64748b;
+  --radius: 10px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: var(--brand);
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Shared, low-level building blocks reused across feature screens - kept
+   here rather than duplicated per-component. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 0.6rem 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+
+  &.btn-primary {
+    background: var(--brand);
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: var(--brand-dark);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+
+  &.btn-secondary {
+    background: #fff;
+    border-color: var(--border);
+    color: var(--text);
+
+    &:hover:not(:disabled) {
+      border-color: var(--brand);
+      color: var(--brand);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  &.btn-danger {
+    background: var(--danger);
+    color: #fff;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  input,
+  select,
+  textarea {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.7rem;
+    background: #fff;
+    color: var(--text);
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px var(--brand-light);
+    }
+  }
+
+  .field-error {
+    font-size: 0.8rem;
+    color: var(--danger);
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+
+  &.badge-success {
+    background: var(--success-light);
+    color: var(--success);
+  }
+
+  &.badge-warning {
+    background: var(--warning-light);
+    color: var(--warning);
+  }
+
+  &.badge-danger {
+    background: var(--danger-light);
+    color: var(--danger);
+  }
+
+  &.badge-neutral {
+    background: #eef1f4;
+    color: var(--text-muted);
+  }
+}
+
+/* SweetAlert2 toast styling to match the design system's palette. */
+.swal2-popup.app-toast {
+  border-radius: var(--radius);
+}
+
+/* Shared list-screen table: on small screens each row becomes a stacked
+   card (no horizontal scroll for key data), per the mobile-responsive
+   requirement - every screen that lists records reuses this instead of
+   rolling its own responsive table. */
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    text-align: left;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.88rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  th {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  tbody tr {
+    transition: background 0.15s ease;
+  }
+
+  tbody tr:hover {
+    background: #fafbfc;
+  }
+
+  td.cell-actions {
+    white-space: nowrap;
+  }
+}
+
+/* ---- Motion: subtle, whole-app entrance/interaction polish ----
+   Kept in ONE place (this global stylesheet, not per-component) so it reaches
+   every screen automatically - `.shell-content` is admin-shell's single
+   <main> wrapper around every routed page's <router-outlet>, and
+   `.modal-overlay`/`.modal-card` are the shared quick-add-modal class names
+   already used by the Purchase/Product forms. All of it backs off completely
+   under prefers-reduced-motion, per standard accessibility practice. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes pageEnter {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .shell-content > * {
+    animation: pageEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .shell-content > *:nth-child(2) {
+    animation-delay: 0.03s;
+  }
+
+  .shell-content > *:nth-child(3) {
+    animation-delay: 0.06s;
+  }
+
+  .shell-content > *:nth-child(4) {
+    animation-delay: 0.09s;
+  }
+
+  .shell-content > *:nth-child(n + 5) {
+    animation-delay: 0.12s;
+  }
+
+  @keyframes overlayFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes modalPopIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .modal-overlay {
+    animation: overlayFadeIn 0.18s ease both;
+  }
+
+  .modal-card {
+    animation: modalPopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+/* Print support for the sales invoice view (Billing > Sales > Print) - hides
+   the app chrome so only the invoice card prints. Components mark anything
+   else they don't want printed (buttons, filters) with .no-print. */
+@media print {
+  .sidebar,
+  .sidebar-backdrop,
+  .topbar,
+  .bottom-nav,
+  .no-print {
+    display: none !important;
+  }
+
+  .shell-main,
+  .shell-content {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body {
+    background: #fff;
+  }
+}
+
+@media (max-width: 720px) {
+  .data-table {
+    thead {
+      display: none;
+    }
+
+    tbody,
+    tr,
+    td {
+      display: block;
+      width: 100%;
+    }
+
+    tr {
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 0.9rem;
+    }
+
+    td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: none;
+      padding: 0.3rem 0;
+      white-space: normal;
+      text-align: right;
+
+      &::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        text-align: left;
+      }
+    }
+
+    td.cell-actions {
+      justify-content: flex-end;
+
+      &::before {
+        content: '';
+      }
+    }
+  }
+}

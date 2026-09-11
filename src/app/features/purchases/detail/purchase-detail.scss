@@ -1,0 +1,150 @@
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+
+  h1 {
+    margin: 0 0 0.2rem;
+    font-size: 1.3rem;
+  }
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.page-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  max-width: 65ch;
+}
+
+.loading-text {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.summary-card {
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.summary-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.2rem;
+}
+
+.summary-value {
+  font-weight: 600;
+}
+
+.totals-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border);
+  font-size: 0.9rem;
+
+  .total-amount {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--brand-dark);
+  }
+}
+
+.cell-strong {
+  font-weight: 600;
+}
+
+.cell-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-muted);
+
+  &:hover {
+    color: var(--brand);
+    border-color: var(--brand);
+  }
+
+  &.danger:hover {
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+}
+
+.payment-summary-row {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.balance-due-highlight {
+  font-weight: 700;
+  color: var(--warning);
+}
+
+.payment-form,
+.payment-history {
+  padding: 1.1rem 1.3rem;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0 0 0.3rem;
+    font-size: 1.05rem;
+  }
+}
+
+.payment-form .page-subtitle {
+  margin-bottom: 0.9rem;
+}
+
+.payment-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .field {
+    margin-bottom: 0;
+  }
+
+  .note-field {
+    flex: 1 1 220px;
+  }
+}
+
+.payment-history {
+  .table-wrap {
+    margin-top: 0.5rem;
+  }
+}

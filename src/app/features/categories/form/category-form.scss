@@ -1,0 +1,91 @@
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+
+  h1 {
+    margin: 0 0 0.2rem;
+    font-size: 1.3rem;
+  }
+}
+
+.page-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  max-width: 65ch;
+}
+
+.form-card {
+  padding: 1.25rem 1.4rem;
+  max-width: 720px;
+  margin-bottom: 1.25rem;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0 1rem;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+
+  input {
+    margin-top: 0.2rem;
+  }
+
+  &.inline {
+    align-items: center;
+    margin-bottom: 0;
+  }
+}
+
+.size-field {
+  max-width: 260px;
+}
+
+.attributes-card h2 {
+  margin: 0 0 0.3rem;
+  font-size: 1rem;
+}
+
+.attribute-add-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border);
+
+  .field {
+    margin-bottom: 0;
+    min-width: 160px;
+  }
+}
+
+.icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-muted);
+
+  &.danger:hover {
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+}

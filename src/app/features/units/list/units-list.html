@@ -1,0 +1,50 @@
+<div class="page-header">
+  <div>
+    <h1>Unit Master</h1>
+    <p class="page-subtitle">
+      Units show up as a dropdown when adding or editing a product, on both the Product and Purchase screens.
+    </p>
+  </div>
+  <a routerLink="/units/new" class="btn btn-primary">
+    <app-icon name="plus" [size]="16"></app-icon>
+    New Unit
+  </a>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <p class="loading-text">Loading...</p>
+  } @else if (units().length === 0) {
+    <app-empty-state
+      icon="unit"
+      title="No units yet"
+      subtitle="Add units here, or quickly add one while creating a product."
+    ></app-empty-state>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Unit</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (unit of units(); track unit.id) {
+            <tr>
+              <td data-label="Unit" class="cell-strong">{{ unit.unit_name }}</td>
+              <td class="cell-actions">
+                <a [routerLink]="['/units', unit.id, 'edit']" class="icon-link" title="Edit">
+                  <app-icon name="edit" [size]="16"></app-icon>
+                </a>
+                <button type="button" class="icon-link danger" title="Delete" (click)="remove(unit)">
+                  <app-icon name="trash" [size]="16"></app-icon>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

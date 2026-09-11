@@ -1,0 +1,115 @@
+<div class="page-header">
+  <div>
+    <h1>{{ categoryId ? 'Edit Category' : 'New Category' }}</h1>
+    <p class="page-subtitle">These flags decide whether IMEI/Serial fields show up for this category's products.</p>
+  </div>
+  <a routerLink="/categories" class="btn btn-secondary">Back to list</a>
+</div>
+
+@if (!loading()) {
+  <form class="card form-card" (ngSubmit)="save()">
+    <div class="grid-2">
+      <div class="field">
+        <label for="category_name">Category name</label>
+        <input id="category_name" name="category_name" type="text" [(ngModel)]="form.category_name" required />
+      </div>
+      <div class="field">
+        <label for="sub_category">Sub-category (optional)</label>
+        <input id="sub_category" name="sub_category" type="text" [(ngModel)]="form.sub_category" placeholder="TV / AC / Mixer..." />
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <label class="checkbox-field">
+        <input type="checkbox" name="is_imei_required" [(ngModel)]="form.is_imei_required" />
+        <span>IMEI required (IMEI1 mandatory, IMEI2 optional) — Mobile-type categories</span>
+      </label>
+      <label class="checkbox-field">
+        <input type="checkbox" name="is_serial_required" [(ngModel)]="form.is_serial_required" />
+        <span>Serial number required — big appliances</span>
+      </label>
+    </div>
+
+    <div class="field size-field">
+      <label for="size_type">Size type (Home Appliance only)</label>
+      <select id="size_type" name="size_type" [(ngModel)]="form.size_type">
+        <option value="">Not applicable</option>
+        <option value="Big">Big</option>
+        <option value="Small">Small</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primary" type="submit" [disabled]="saving()">
+      {{ saving() ? 'Saving...' : categoryId ? 'Save changes' : 'Create category' }}
+    </button>
+  </form>
+
+  @if (categoryId) {
+    <div class="card form-card attributes-card">
+      <h2>Dynamic attributes</h2>
+      <p class="page-subtitle">
+        Fields like RAM/Storage/Color or Capacity/Power show up on the Product form for products in this category.
+      </p>
+
+      @if (attributes().length > 0) {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Attribute</th>
+                <th>Type</th>
+                <th>Options</th>
+                <th>Required</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (attr of attributes(); track attr.id) {
+                <tr>
+                  <td data-label="Attribute">{{ attr.attribute_name }}</td>
+                  <td data-label="Type">{{ attr.attribute_type }}</td>
+                  <td data-label="Options">{{ attr.optionsText || '—' }}</td>
+                  <td data-label="Required">{{ attr.is_required ? 'Yes' : 'No' }}</td>
+                  <td class="cell-actions">
+                    <button type="button" class="icon-link danger" title="Remove" (click)="removeAttribute(attr)">
+                      <app-icon name="trash" [size]="16"></app-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <div class="attribute-add-row">
+        <div class="field">
+          <label>Attribute name</label>
+          <input type="text" [(ngModel)]="newAttribute.attribute_name" name="new_attr_name" placeholder="RAM" />
+        </div>
+        <div class="field">
+          <label>Type</label>
+          <select [(ngModel)]="newAttribute.attribute_type" name="new_attr_type">
+            <option value="text">Text</option>
+            <option value="number">Number</option>
+            <option value="select">Select</option>
+          </select>
+        </div>
+        @if (newAttribute.attribute_type === 'select') {
+          <div class="field">
+            <label>Options (comma separated)</label>
+            <input type="text" [(ngModel)]="newAttribute.optionsText" name="new_attr_options" placeholder="4GB, 6GB, 8GB" />
+          </div>
+        }
+        <label class="checkbox-field inline">
+          <input type="checkbox" [(ngModel)]="newAttribute.is_required" name="new_attr_required" />
+          <span>Required</span>
+        </label>
+        <button type="button" class="btn btn-secondary" (click)="addAttribute()">
+          <app-icon name="plus" [size]="16"></app-icon>
+          Add attribute
+        </button>
+      </div>
+    </div>
+  }
+}

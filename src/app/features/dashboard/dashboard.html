@@ -1,0 +1,155 @@
+<div class="page-header">
+  <div class="page-header-text">
+    <span class="page-eyebrow">Dashboard</span>
+    <h1>Welcome{{ auth.currentUser() ? ', ' + auth.currentUser()!.name : '' }}</h1>
+    <p class="page-subtitle">Here's what's happening at the shop today, {{ today | date: 'EEEE, d MMM' }}.</p>
+  </div>
+</div>
+
+<div class="metric-grid">
+  <div class="card metric-card metric-card--brand">
+    <div class="metric-icon sales"><app-icon name="sales" [size]="20"></app-icon></div>
+    <div>
+      <p class="metric-label">Today's Sales</p>
+      <p class="metric-value">&#8377;{{ data()?.today_sales ?? 0 | number: '1.0-0' }}</p>
+    </div>
+  </div>
+
+  <div class="card metric-card metric-card--warning">
+    <div class="metric-icon warning"><app-icon name="warning" [size]="20"></app-icon></div>
+    <div>
+      <p class="metric-label">Low Stock Alerts</p>
+      <p class="metric-value">{{ data()?.low_stock_count ?? 0 }}</p>
+    </div>
+    <a routerLink="/stock" [queryParams]="{ tab: 'summary', low: 1 }" class="metric-link">Compare</a>
+  </div>
+
+  <div class="card metric-card metric-card--success">
+    <div class="metric-icon purchase"><app-icon name="cart" [size]="20"></app-icon></div>
+    <div>
+      <p class="metric-label">Pending Payments</p>
+      <p class="metric-value">&#8377;{{ data()?.pending_payments ?? 0 | number: '1.0-0' }}</p>
+    </div>
+    <a routerLink="/sales" [queryParams]="{ pending: 1 }" class="metric-link">Compare</a>
+  </div>
+
+  <div class="card metric-card metric-card--info">
+    <div class="metric-icon products"><app-icon name="products" [size]="20"></app-icon></div>
+    <div>
+      <p class="metric-label">Top Product Today</p>
+      <p class="metric-value metric-value-small">{{ data()?.top_products?.[0]?.product_name || '—' }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <div class="card panel">
+    <div class="panel-header">
+      <h2>Sales Trend</h2>
+      <span class="panel-tag">Last 7 days</span>
+      @if (!loading() && trendSeries().length > 0) {
+        <span class="panel-total">&#8377;{{ seriesTotal(trendSeries()) | number: '1.0-0' }} total</span>
+      }
+    </div>
+    @if (loading()) {
+      <p class="panel-placeholder">Loading...</p>
+    } @else if (trendSeries().length === 0) {
+      <p class="panel-placeholder">No sales recorded yet.</p>
+    } @else {
+      <div class="bar-chart">
+        @for (point of trendSeries(); track point.label) {
+          <div class="bar-col">
+            <div class="bar" [style.height.%]="barHeight(point.value, trendSeries())" [title]="'₹' + point.value"></div>
+            <span class="bar-label">{{ point.label }}</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="card panel">
+    <div class="panel-header">
+      <h2>Category-wise Revenue</h2>
+      @if (!loading() && categorySeries().length > 0) {
+        <span class="panel-total">&#8377;{{ seriesTotal(categorySeries()) | number: '1.0-0' }} total</span>
+      }
+    </div>
+    @if (loading()) {
+      <p class="panel-placeholder">Loading...</p>
+    } @else if (categorySeries().length === 0) {
+      <p class="panel-placeholder">No sales recorded yet.</p>
+    } @else {
+      <div class="hbar-chart">
+        @for (cat of categorySeries(); track cat.label) {
+          <div class="hbar-row">
+            <span class="hbar-label">{{ cat.label }}</span>
+            <div class="hbar-track">
+              <div class="hbar-fill" [style.width.%]="barHeight(cat.value, categorySeries())"></div>
+            </div>
+            <span class="hbar-value">₹{{ cat.value | number: '1.0-0' }}</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+@if (data()?.top_products?.length) {
+  <div class="card panel top-products-panel">
+    <div class="panel-header">
+      <h2>Top Selling Products</h2>
+      <span class="panel-tag">By revenue</span>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Qty Sold</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of data()!.top_products; track p.product_id; let i = $index) {
+            <tr>
+              <td data-label="Product" class="cell-strong">
+                <span class="rank-badge" [class.rank-top]="i < 3">{{ i + 1 }}</span>
+                {{ p.product_name }}
+              </td>
+              <td data-label="Qty Sold">{{ p.qty_sold }}</td>
+              <td data-label="Revenue">₹{{ p.revenue }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<div class="card panel quick-links">
+  <div class="panel-header">
+    <h2>Get set up</h2>
+  </div>
+  <div class="quick-link-grid">
+    <a routerLink="/categories" class="quick-link">
+      <span class="quick-link-icon"><app-icon name="categories" [size]="18"></app-icon></span>
+      <span>Category Master</span>
+    </a>
+    <a routerLink="/products" class="quick-link">
+      <span class="quick-link-icon"><app-icon name="products" [size]="18"></app-icon></span>
+      <span>Product Master</span>
+    </a>
+    <a routerLink="/parties" class="quick-link">
+      <span class="quick-link-icon"><app-icon name="parties" [size]="18"></app-icon></span>
+      <span>Suppliers &amp; Customers</span>
+    </a>
+    <a routerLink="/reports" class="quick-link">
+      <span class="quick-link-icon"><app-icon name="reports" [size]="18"></app-icon></span>
+      <span>Reports</span>
+    </a>
+    <a routerLink="/settings" class="quick-link">
+      <span class="quick-link-icon"><app-icon name="settings" [size]="18"></app-icon></span>
+      <span>Shop Settings</span>
+    </a>
+  </div>
+</div>

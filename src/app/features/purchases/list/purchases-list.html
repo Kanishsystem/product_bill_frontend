@@ -1,0 +1,71 @@
+<div class="page-header">
+  <div>
+    <h1>Purchases</h1>
+    <p class="page-subtitle">Every purchase auto stocks-in its items — IMEI/Serial units one by one, everything else by quantity.</p>
+  </div>
+  <a routerLink="/purchases/new" class="btn btn-primary">
+    <app-icon name="plus" [size]="16"></app-icon>
+    New Purchase
+  </a>
+</div>
+
+<div class="card filter-bar">
+  <div class="field">
+    <label>From</label>
+    <input type="date" [(ngModel)]="fromDate" (ngModelChange)="load()" />
+  </div>
+  <div class="field">
+    <label>To</label>
+    <input type="date" [(ngModel)]="toDate" (ngModelChange)="load()" />
+  </div>
+  @if (fromDate || toDate) {
+    <button type="button" class="btn btn-secondary" (click)="clearFilters()">Clear</button>
+  }
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <p class="loading-text">Loading...</p>
+  } @else if (purchases().length === 0) {
+    <app-empty-state icon="purchase" title="No purchases recorded yet"></app-empty-state>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Supplier</th>
+            <th>Invoice No</th>
+            <th>Tax</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of purchases(); track p.id) {
+            <tr>
+              <td data-label="Date">{{ p.purchase_date }}</td>
+              <td data-label="Supplier" class="cell-strong">{{ p.supplier_name }}</td>
+              <td data-label="Invoice No">{{ p.supplier_invoice_no }}</td>
+              <td data-label="Tax">
+                <span class="badge badge-neutral">{{ p.tax_type === 'IGST' ? 'IGST' : 'CGST+SGST' }}</span>
+              </td>
+              <td data-label="Total" class="cell-strong">₹{{ p.total_amount }}</td>
+              <td data-label="Status">
+                <span class="badge" [class.badge-success]="p.status === 'recorded'" [class.badge-danger]="p.status === 'cancelled'">
+                  {{ p.status }}
+                </span>
+              </td>
+              <td class="cell-actions">
+                <a [routerLink]="['/purchases', p.id]" class="icon-link" title="View">
+                  <app-icon name="chevronRight" [size]="16"></app-icon>
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

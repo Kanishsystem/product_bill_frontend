@@ -1,0 +1,392 @@
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.page-eyebrow {
+  display: inline-block;
+  margin-bottom: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.page-header-text h1 {
+  margin: 0 0 0.3rem;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+}
+
+.page-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.metric-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.1rem 1.1rem 1rem;
+  position: relative;
+  overflow: hidden;
+  --accent: var(--brand);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent);
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  &--warning {
+    --accent: var(--warning);
+  }
+
+  &--success {
+    --accent: var(--success);
+  }
+
+  &--info {
+    --accent: var(--text-muted);
+  }
+}
+
+.metric-link {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.metric-value-small {
+  font-size: 0.95rem !important;
+}
+
+.metric-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  color: var(--brand);
+  background: var(--brand-light);
+  transition: transform 0.2s ease;
+
+  .metric-card:hover & {
+    transform: scale(1.08) rotate(-4deg);
+  }
+
+  &.warning {
+    color: var(--warning);
+    background: var(--warning-light);
+  }
+
+  &.purchase {
+    color: var(--success);
+    background: var(--success-light);
+  }
+}
+
+.metric-label {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.metric-value {
+  margin: 0.1rem 0 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.panel {
+  padding: 1.1rem 1.2rem;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.6rem;
+  margin-bottom: 0.9rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+  }
+}
+
+.panel-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-app);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+}
+
+.panel-total {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--brand-dark);
+}
+
+.panel-placeholder {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 2rem 0;
+  text-align: center;
+}
+
+/* Dependency-free bar chart: a fixed-height track, bars sized by % height. */
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  height: 160px;
+  padding-top: 0.5rem;
+}
+
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 0.4rem;
+}
+
+.bar {
+  width: 100%;
+  max-width: 32px;
+  background: var(--brand-gradient);
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+  transform-origin: bottom;
+}
+
+.bar-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.hbar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.hbar-row {
+  display: grid;
+  grid-template-columns: 100px 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.hbar-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hbar-track {
+  height: 10px;
+  border-radius: 999px;
+  background: #eef1f4;
+  overflow: hidden;
+}
+
+.hbar-fill {
+  height: 100%;
+  background: var(--brand-gradient);
+  border-radius: 999px;
+  transform-origin: left;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes growVertical {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+
+  @keyframes growHorizontal {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  .bar {
+    animation: growVertical 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .hbar-fill {
+    animation: growHorizontal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  // Stagger each bar/row slightly so the chart draws in left-to-right / top-to-bottom instead of popping in all at once.
+  @for $i from 1 through 12 {
+    .bar-col:nth-child(#{$i}) .bar {
+      animation-delay: #{$i * 0.04}s;
+    }
+
+    .hbar-row:nth-child(#{$i}) .hbar-fill {
+      animation-delay: #{$i * 0.06}s;
+    }
+  }
+}
+
+.hbar-value {
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.top-products-panel {
+  margin-bottom: 1.25rem;
+}
+
+.cell-strong {
+  font-weight: 600;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 0.5rem;
+  border-radius: 6px;
+  background: var(--bg-app);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+
+  &.rank-top {
+    background: var(--brand-light);
+    color: var(--brand-dark);
+  }
+}
+
+.quick-link-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.quick-link {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: var(--brand);
+    color: var(--brand-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+
+    .quick-link-icon {
+      background: var(--brand);
+      color: #fff;
+    }
+  }
+}
+
+.quick-link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--brand-light);
+  color: var(--brand);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+// ---- Mobile: tighten spacing and keep the chart rows legible on narrow screens ----
+
+@media (max-width: 480px) {
+  .page-header-text h1 {
+    font-size: 1.25rem;
+  }
+
+  .metric-value {
+    font-size: 1.15rem;
+  }
+
+  .panel-total {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+
+  .hbar-row {
+    grid-template-columns: 72px 1fr auto;
+    gap: 0.4rem;
+  }
+
+  .hbar-value {
+    font-size: 0.72rem;
+  }
+}

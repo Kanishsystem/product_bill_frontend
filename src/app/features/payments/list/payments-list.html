@@ -1,0 +1,126 @@
+<div class="page-header">
+  <div>
+    <h1>Payments</h1>
+    <p class="page-subtitle">Money customers still owe you, and money you still owe your suppliers — all in one place.</p>
+  </div>
+</div>
+
+<div class="card filter-bar">
+  <div class="field search-field">
+    <label>Search</label>
+    <input type="text" [(ngModel)]="search" (ngModelChange)="load()" placeholder="Name, phone or invoice no..." />
+  </div>
+</div>
+
+<div class="summary-grid">
+  <div class="card summary-stat receivable">
+    <div class="stat-icon"><app-icon name="sales" [size]="20"></app-icon></div>
+    <div>
+      <p class="stat-label">You'll Receive</p>
+      <p class="stat-value">₹{{ totalReceivable() | number: '1.2-2' }}</p>
+      <p class="stat-sub">{{ receivables().length }} customer invoice{{ receivables().length === 1 ? '' : 's' }}</p>
+    </div>
+  </div>
+
+  <div class="card summary-stat payable">
+    <div class="stat-icon"><app-icon name="purchase" [size]="20"></app-icon></div>
+    <div>
+      <p class="stat-label">You Owe</p>
+      <p class="stat-value">₹{{ totalPayable() | number: '1.2-2' }}</p>
+      <p class="stat-sub">{{ payables().length }} supplier purchase{{ payables().length === 1 ? '' : 's' }}</p>
+    </div>
+  </div>
+
+  <div class="card summary-stat" [class.net-positive]="netPosition() >= 0" [class.net-negative]="netPosition() < 0">
+    <div class="stat-icon"><app-icon name="reports" [size]="20"></app-icon></div>
+    <div>
+      <p class="stat-label">Net Position</p>
+      <p class="stat-value">₹{{ (netPosition() < 0 ? -netPosition() : netPosition()) | number: '1.2-2' }}</p>
+      <p class="stat-sub">{{ netPosition() >= 0 ? "You're owed more than you owe" : 'You owe more than you\'re owed' }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2 class="card-title">Customers Who Owe You <span class="badge-count">{{ receivables().length }}</span></h2>
+  @if (loadingReceivables()) {
+    <p class="loading-text">Loading...</p>
+  } @else if (receivables().length === 0) {
+    <app-empty-state icon="sales" title="No customers currently owe you money"></app-empty-state>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Invoice No</th>
+            <th>Customer</th>
+            <th>Date</th>
+            <th>Total</th>
+            <th>Paid</th>
+            <th>Balance Due</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (inv of receivables(); track inv.id) {
+            <tr>
+              <td data-label="Invoice No" class="cell-strong">{{ inv.invoice_no }}</td>
+              <td data-label="Customer">{{ inv.customer_name }}</td>
+              <td data-label="Date">{{ inv.invoice_date }}</td>
+              <td data-label="Total">₹{{ num(inv.total_amount) | number: '1.2-2' }}</td>
+              <td data-label="Paid">₹{{ num(inv.amount_paid) | number: '1.2-2' }}</td>
+              <td data-label="Balance Due" class="due-cell">₹{{ num(inv.balance_due) | number: '1.2-2' }}</td>
+              <td class="cell-actions">
+                <a [routerLink]="['/sales', inv.id]" class="icon-link" title="View invoice / record payment">
+                  <app-icon name="eye" [size]="16"></app-icon>
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<div class="card">
+  <h2 class="card-title">Suppliers You Owe <span class="badge-count">{{ payables().length }}</span></h2>
+  @if (loadingPayables()) {
+    <p class="loading-text">Loading...</p>
+  } @else if (payables().length === 0) {
+    <app-empty-state icon="purchase" title="You don't owe any suppliers money right now"></app-empty-state>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Invoice No</th>
+            <th>Supplier</th>
+            <th>Date</th>
+            <th>Total</th>
+            <th>Paid</th>
+            <th>Balance Due</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (pur of payables(); track pur.id) {
+            <tr>
+              <td data-label="Invoice No" class="cell-strong">{{ pur.supplier_invoice_no }}</td>
+              <td data-label="Supplier">{{ pur.supplier_name }}</td>
+              <td data-label="Date">{{ pur.purchase_date }}</td>
+              <td data-label="Total">₹{{ num(pur.total_amount) | number: '1.2-2' }}</td>
+              <td data-label="Paid">₹{{ num(pur.amount_paid) | number: '1.2-2' }}</td>
+              <td data-label="Balance Due" class="due-cell">₹{{ num(pur.balance_due) | number: '1.2-2' }}</td>
+              <td class="cell-actions">
+                <a [routerLink]="['/purchases', pur.id]" class="icon-link" title="View purchase / record payment">
+                  <app-icon name="eye" [size]="16"></app-icon>
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

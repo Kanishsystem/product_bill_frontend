@@ -1,0 +1,50 @@
+<div class="page-header">
+  <div>
+    <h1>Brand Master</h1>
+    <p class="page-subtitle">
+      Brands show up as a dropdown when adding or editing a product, on both the Product and Purchase screens.
+    </p>
+  </div>
+  <a routerLink="/brands/new" class="btn btn-primary">
+    <app-icon name="plus" [size]="16"></app-icon>
+    New Brand
+  </a>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <p class="loading-text">Loading...</p>
+  } @else if (brands().length === 0) {
+    <app-empty-state
+      icon="brand"
+      title="No brands yet"
+      subtitle="Add brands here, or quickly add one while creating a product."
+    ></app-empty-state>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Brand</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (brand of brands(); track brand.id) {
+            <tr>
+              <td data-label="Brand" class="cell-strong">{{ brand.brand_name }}</td>
+              <td class="cell-actions">
+                <a [routerLink]="['/brands', brand.id, 'edit']" class="icon-link" title="Edit">
+                  <app-icon name="edit" [size]="16"></app-icon>
+                </a>
+                <button type="button" class="icon-link danger" title="Delete" (click)="remove(brand)">
+                  <app-icon name="trash" [size]="16"></app-icon>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

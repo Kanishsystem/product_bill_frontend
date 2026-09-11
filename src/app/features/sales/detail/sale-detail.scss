@@ -1,0 +1,826 @@
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+
+  h1 {
+    margin: 0 0 0.2rem;
+    font-size: 1.3rem;
+  }
+}
+
+.page-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  max-width: 65ch;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.loading-text {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.invoice-card {
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+// ---- Tax invoice header (shop name/address/GSTIN, printed exactly like the
+// shop's own pre-printed bill format) ----
+
+.bill-top-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+
+  .bill-top-left {
+    text-align: left;
+  }
+
+  .bill-top-right {
+    text-align: right;
+  }
+
+  .bill-top-center {
+    text-align: center;
+    color: var(--text);
+    letter-spacing: 0.04em;
+  }
+}
+
+.bill-shop-name {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-top: 0.3rem;
+  letter-spacing: 0.01em;
+  // A shop name is often too long for one line (e.g. "RASI TIME CENTER" /
+  // "MOBILES & HOME APPLIANCES") - Settings > Shop Identity lets the owner
+  // type it across two lines, and this renders that line break instead of
+  // collapsing it to a single space (same convention as .bill-to-address).
+  white-space: pre-line;
+}
+
+.bill-shop-address {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+// Uploaded replacement for .bill-shop-name/.bill-shop-address (Settings >
+// Invoice heading) - centered and capped to a sensible printed banner
+// height regardless of the source image's own dimensions.
+.bill-shop-header-image {
+  display: block;
+  max-width: 100%;
+  max-height: 110px;
+  margin: 0.3rem auto 0;
+}
+
+.bill-rule {
+  border: none;
+  border-top: 1px solid var(--text);
+  margin: 0.85rem 0;
+}
+
+.bill-meta-row {
+  display: flex;
+  align-items: center;
+  // No on the left, Date pushed to the right edge of the row (matching the
+  // shop's old bill layout) - the status badge is no-print, so on the
+  // printed invoice this row only ever has the two real children anyway.
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  margin-bottom: 0.9rem;
+}
+
+.bill-to {
+  margin-bottom: 1rem;
+}
+
+.bill-to-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-right: 0.4rem;
+}
+
+.bill-to-name {
+  display: inline;
+  font-weight: 700;
+}
+
+.bill-to-address {
+  white-space: pre-line;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.bill-to-phone,
+.bill-to-gstin {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+// ---- Items table ----
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.tax-items-table {
+  // table-layout: fixed makes the <colgroup> widths below actually stick -
+  // client asked for Item Particulars wider and Qty/GST % narrower, which
+  // the default "auto" layout wouldn't reliably honor (it treats a column's
+  // width as a hint, not a rule, and can override it based on content).
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+
+  // Column widths, as percentages of the whole table. Qty needs enough room
+  // for its widest realistic value ("2.00 Nos") to not overflow into GST %
+  // next to it even with table-layout: fixed's no-shrink columns - checked
+  // against the sandbox's actual data rather than guessed, since a
+  // too-narrow nowrap column visually runs into its neighbour instead of
+  // wrapping. On screen, the checkbox column's own 4% comes out of Item
+  // Particulars' share; on print .col-check is removed from the layout
+  // entirely (it carries .no-print), so Item Particulars gets that 4% back
+  // - see the @media print override below.
+  .col-check {
+    width: 4%;
+  }
+
+  .col-sno {
+    width: 5%;
+  }
+
+  .col-particulars {
+    width: 42%;
+  }
+
+  .col-rate {
+    width: 13%;
+  }
+
+  .col-qty {
+    width: 11%;
+  }
+
+  .col-gst {
+    width: 7%;
+  }
+
+  .col-amount {
+    width: 18%;
+  }
+
+  th,
+  td {
+    border: 1px solid var(--border);
+    padding: 0.5rem 0.6rem;
+    vertical-align: top;
+    // table-layout: fixed no longer shrinks a column to fit its content, so
+    // long unbroken text (a long product name, an IMEI string) needs to
+    // wrap on its own rather than overflowing the fixed column width.
+    overflow-wrap: break-word;
+  }
+
+  thead th {
+    background: var(--bg-app);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .num {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .col-sno {
+    text-align: center;
+  }
+}
+
+// Blank space padding the printed items table out to a fixed minimum row
+// count (see blankRowCount() in sale-detail.ts) - a paper-bill-book
+// convention that has no place in the interactive on-screen view (it would
+// just look like an empty/broken row there), so hidden on screen and only
+// switched on for print. Deliberately ONE plain empty cell rather than
+// several separately-ruled blank rows - the reference photo shows a bare
+// rectangle below the last item, not a row-by-row grid, so this cell's own
+// borders are turned off and only the table's outer/left/right edges (from
+// the real rows around it) show through.
+.blank-item-row {
+  display: none;
+}
+
+.item-name {
+  font-weight: 700;
+}
+
+.item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.9rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  margin-top: 0.15rem;
+}
+
+// ---- Warranty line (years/months for the whole invoice) - mirrors the
+// shop's old pre-printed bill book, which gives warranty a single line
+// rather than a per-item breakdown: every item on one invoice always
+// carries the same warranty period in their process, so there's only one
+// real value to show. Only rendered at all when at least one item has a
+// warranty (see hasAnyWarranty() in the component). ----
+
+.bill-warranty-row {
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+  padding: 0.4rem 0;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+}
+
+.bill-warranty-label {
+  font-weight: 700;
+}
+
+.bill-warranty-heading {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin-right: 0.3rem;
+}
+
+// ---- GST breakdown + grand total, side by side ----
+
+.bill-summary-row {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.gst-summary-wrap {
+  flex: 1 1 320px;
+  min-width: 260px;
+}
+
+.gst-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+
+  th,
+  td {
+    border: 1px solid var(--border);
+    padding: 0.35rem 0.5rem;
+  }
+
+  thead th {
+    background: var(--bg-app);
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+  }
+
+  .num {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .gst-total-row {
+    font-weight: 700;
+  }
+}
+
+.bill-grand-box {
+  flex: 0 0 240px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+}
+
+.grand-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  padding: 0.15rem 0;
+
+  &.balance-due {
+    color: var(--danger);
+    font-weight: 700;
+  }
+
+  &.refund-due {
+    color: var(--warning);
+    font-weight: 700;
+  }
+}
+
+// Total Qty (left) and Grand Total (right, large/bold) sharing one row,
+// matching the shop's old bill book - Grand Total moved out of the
+// Discount/Total/Round-Off/Paid box above so it reads as the headline
+// figure of the whole invoice rather than just another line in that box.
+.bill-qty-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+
+  .grand-total {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--brand-dark);
+  }
+}
+
+// ---- Terms & conditions, signature line ----
+
+.bill-terms {
+  position: relative;
+  margin-top: 1.25rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+
+  strong {
+    color: var(--text);
+  }
+
+  ol {
+    margin: 0.35rem 0 0;
+    padding-left: 1.2rem;
+  }
+
+  li {
+    margin-bottom: 0.15rem;
+  }
+}
+
+// "Errors and Omissions Excepted" - the standard fine-print disclaimer the
+// shop's old bill book always printed bottom-right of the terms box.
+.bill-terms-eoe {
+  margin-top: 0.3rem;
+  text-align: right;
+  font-style: italic;
+}
+
+.bill-signature-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2.5rem;
+  padding-top: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.signature-box {
+  border-top: 1px solid var(--border);
+  padding-top: 0.4rem;
+  min-width: 200px;
+  text-align: center;
+}
+
+// The shop-name signature line can now print as 2 lines (see
+// shopSignatureLines()) instead of one joined line - a little breathing
+// room between them so they don't read as cramped together.
+.bill-signature-shop-line + .bill-signature-shop-line {
+  margin-top: 0.25rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-top: 0.2rem;
+
+  &.badge-success {
+    background: var(--success-light);
+    color: var(--success);
+  }
+
+  &.badge-warning {
+    background: var(--warning-light);
+    color: var(--warning);
+  }
+
+  &.badge-danger {
+    background: var(--danger-light);
+    color: var(--danger);
+  }
+}
+
+.return-bar {
+  padding: 1rem 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  position: sticky;
+  bottom: 0.75rem;
+  font-weight: 600;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.payment-form,
+.payment-history,
+.refund-banner {
+  max-width: 800px;
+  margin: 0 auto 1rem;
+  padding: 1.1rem 1.3rem;
+
+  h2 {
+    margin: 0 0 0.3rem;
+    font-size: 1.05rem;
+  }
+}
+
+.payment-form .page-subtitle {
+  margin-bottom: 0.9rem;
+}
+
+// Distinct from the payment-form card below it (owed TO the shop) - this is
+// owed BACK to the customer, so it gets its own warning-toned treatment
+// rather than reusing the balance-due card's styling.
+.refund-banner {
+  border: 1px solid var(--warning);
+  background: var(--warning-light);
+
+  h2 {
+    color: var(--warning);
+  }
+
+  .page-subtitle {
+    margin-bottom: 0;
+    color: inherit;
+  }
+}
+
+.payment-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .field {
+    margin-bottom: 0;
+  }
+
+  .note-field {
+    flex: 1 1 220px;
+  }
+}
+
+.payment-history {
+  .table-wrap {
+    margin-top: 0.5rem;
+  }
+}
+
+// The shop's customer prints this invoice on A5 paper (half the area of
+// A4). Without an explicit @page size the browser defaults to A4/Letter,
+// and the everyday desktop-density spacing/font-sizes above comfortably
+// spill onto a second page once a header image, several line items (each
+// with an HSN/serial/warranty meta line), a full address, the GST
+// breakdown and terms & conditions are all present. Everything in this
+// block only compacts the PRINTED output - the on-screen view is untouched.
+@page {
+  size: A5;
+  margin: 4.5mm;
+}
+
+@media print {
+  // The app's base line-height (1.5, in styles.scss) is comfortable for
+  // on-screen reading but wastes vertical space at these font sizes: 1.3
+  // is still noticeably roomier than tight single-spaced text, just not
+  // paying the full on-screen premium.
+  // NOTE: this budget also has to survive the browser's own print-dialog
+  // "Headers and footers" option (it reserves extra space for a date/URL
+  // line above and a page-number line below, on top of the @page margin
+  // set here) - if a printed bill is ever right on the edge, turning that
+  // browser option off is worth as much as any further CSS compaction.
+  .invoice-card,
+  .invoice-card * {
+    line-height: 1.08;
+  }
+
+  .invoice-card {
+    box-shadow: none;
+    // A real border here (rather than "none") is deliberate - the shop's
+    // old pre-printed bill book was a solid-ruled box, and the customer
+    // specifically asked for the printed invoice to look the same way.
+    border: 1pt solid #000;
+    max-width: none;
+    padding: 1mm;
+  }
+
+  .bill-top-row {
+    font-size: 0.8rem;
+  }
+
+  .bill-shop-name {
+    font-size: 1.45rem;
+    margin-top: 0.18rem;
+  }
+
+  .bill-shop-address {
+    font-size: 0.78rem;
+    margin-top: 0.08rem;
+  }
+
+  // Shrunk from 78px (was follow-up #13's value) to help pay for a bigger
+  // stamp-sized gap above the signature row - see that rule's own comment.
+  .bill-shop-header-image {
+    max-height: 64px;
+    margin-top: 0.1rem;
+  }
+
+  .bill-rule {
+    margin: 0.25rem 0;
+  }
+
+  .bill-meta-row {
+    font-size: 0.85rem;
+    gap: 1.2rem;
+    margin-bottom: 0.18rem;
+    padding-bottom: 0.12rem;
+    border-bottom: 0.75pt solid #000;
+  }
+
+  .bill-to {
+    margin-bottom: 0.18rem;
+    padding-bottom: 0.12rem;
+    border-bottom: 0.75pt solid #000;
+  }
+
+  .bill-to-label {
+    font-size: 0.8rem;
+  }
+
+  .bill-to-name {
+    font-size: 0.92rem;
+  }
+
+  .bill-to-address,
+  .bill-to-phone,
+  .bill-to-gstin {
+    font-size: 0.8rem;
+    margin-top: 0;
+  }
+
+  .tax-items-table {
+    font-size: 0.77rem;
+
+    // The no-print checkbox column is gone entirely on paper (its own
+    // .no-print rule removes it from the column layout), so its 4% comes
+    // back to Item Particulars here instead of going unused.
+    .col-particulars {
+      width: 46%;
+    }
+
+    th,
+    td {
+      // Horizontal padding kept tight - every pixel not spent on padding
+      // here is a pixel handed back to the Item Particulars column, the one
+      // column whose content (product name, HSN, IMEI/Serial) can
+      // genuinely run long. Vertical padding has a little more room since
+      // it only multiplies by the real row count (max 5, per
+      // Billing.MAX_CART_LINES), not by page width.
+      padding: 0.17rem 0.22rem;
+    }
+
+    thead th {
+      font-size: 0.64rem;
+    }
+  }
+
+  .blank-item-row {
+    display: table-row;
+
+    td {
+      // One plain blank cell, no internal grid line - height comes from
+      // --blank-lines (set inline from blankRowCount()) so it reads as
+      // "this many empty lines' worth of space", same total space a
+      // per-row version would use, without the extra horizontal rules a
+      // separate <tr> per blank line would draw across it. The per-line
+      // figure (2rem) is sized to match one real item row's own height
+      // (a typical 2-line row: item-name + one HSN/S-N meta line, at this
+      // print block's font-size/line-height/padding) so the 5 row "slots"
+      // - real and blank - read as evenly sized, not as one undersized
+      // filler block tacked underneath differently-sized real rows. Only
+      // ever adds height for a bill with FEWER than 5 real items - which is
+      // exactly when there's spare page budget to spend - so this is safe:
+      // it can't push a full 5-item bill (blankRowCount() is 0 there) past
+      // the one-page guarantee.
+      height: calc(var(--blank-lines, 0) * 2rem);
+    }
+  }
+
+  .item-meta {
+    font-size: 0.66rem;
+    gap: 0 0.5rem;
+    // Client asked for breathing room between the item name and the
+    // HSN/S-N line below it on the printed invoice - the 0.05rem this used
+    // to be read as almost touching. Re-verified with the sandbox's 5-item
+    // worst-case invoices (Playwright print-to-PDF + pypdf page count)
+    // before landing on this value - it's the largest gap that still keeps
+    // every invoice shape at its existing page count (1-3 item invoices
+    // stay one page; the 5-item worst cases were already 2 pages solely
+    // because of the signature-seal space, iteration log item 50 - this
+    // change doesn't add to that).
+    margin-top: 0.22rem;
+  }
+
+  .bill-warranty-row {
+    font-size: 0.8rem;
+    padding: 0.15rem 0;
+    margin-top: 0.2rem;
+    gap: 1.2rem;
+    border-top: 0.75pt solid #000;
+    border-bottom: 0.75pt solid #000;
+  }
+
+  .bill-warranty-heading {
+    font-size: 0.65rem;
+  }
+
+  // A5 is only ~140mm wide inside the card's own border/padding, so the
+  // GST breakdown table and the Total/Round Off/Paid box - side by side on
+  // screen - need real width discipline here or they wrap onto separate
+  // rows instead of sharing one line (which is what happened once the
+  // fonts got bigger and the screen styles' 260px min-width no longer fit).
+  .bill-summary-row {
+    flex-wrap: nowrap;
+    margin-top: 0.2rem;
+    gap: 0.35rem;
+  }
+
+  .gst-summary-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .gst-summary-table {
+    font-size: 0.68rem;
+
+    th,
+    td {
+      padding: 0.12rem 0.2rem;
+    }
+
+    thead th {
+      font-size: 0.56rem;
+    }
+  }
+
+  .bill-grand-box {
+    flex: 0 0 165px;
+    padding: 0.18rem 0.3rem;
+  }
+
+  .grand-row {
+    font-size: 0.7rem;
+    padding: 0.03rem 0;
+  }
+
+  // Total Qty (left) and Grand Total (right) must stay side by side on one
+  // line at every invoice width - nowrap plus a fixed-enough gap so a long
+  // Grand Total figure never pushes onto its own line underneath.
+  .bill-qty-row {
+    flex-wrap: nowrap;
+    margin-top: 0.12rem;
+    padding-top: 0.08rem;
+    padding-bottom: 0.15rem;
+    // A rule below this row too (matching the one already above it, from
+    // the base .bill-qty-row style) - closes it off as its own line,
+    // separating Total Qty/Grand Total from the terms text underneath.
+    border-bottom: 0.75pt solid #000;
+    font-size: 0.82rem;
+    white-space: nowrap;
+
+    .grand-total {
+      font-size: 0.95rem;
+    }
+  }
+
+  // Real breathing room before "குறிப்பு :" (separating it from the totals
+  // above) and after the last numbered line (separating it from E&O.E and
+  // the signature row below) - kept, but reined back in from the previous
+  // round now that a bill is capped at 5 items (Billing.MAX_CART_LINES) and
+  // no longer needs to survive an unbounded worst case. Trimmed again
+  // (0.42rem -> 0.28rem) to help pay for a bigger gap above the signature
+  // row for the company seal - see .bill-signature-row's own comment.
+  .bill-terms {
+    margin-top: 0.28rem;
+    margin-bottom: 0.06rem;
+    font-size: 0.62rem;
+
+    ol {
+      margin: 0.15rem 0 0;
+      padding-left: 1rem;
+    }
+
+    li {
+      margin-bottom: 0.02rem;
+    }
+  }
+
+  .bill-terms-eoe {
+    margin-top: 0.12rem;
+    font-size: 0.72rem;
+  }
+
+  // Client asked twice for more blank space above the signature line for the
+  // company seal - first bumped from the old 0.34rem (follow-up #16) to
+  // 1.3rem while still holding the 5-item worst-case invoices to one page
+  // (see the two trims below, both still in effect), but the client said
+  // that still wasn't enough room for an actual stamp. Second round: they
+  // clarified a 5-item bill is rare for this shop (usually 2-3 items), so
+  // this was deliberately raised much further - to a real, physical-
+  // seal-sized gap (~6rem, roughly a 3cm stamp) - PAST the point where it
+  // still fits the 5-item worst case on one page. Confirmed this stays one
+  // page for every realistic common case (1-3 items); the trade-off, agreed
+  // given how rare 5-item bills are, is that a full 5-item bill (header
+  // image + either tax layout) now prints its signature line alone on a
+  // near-blank 2nd page. If 5-item bills turn out to be more common than
+  // described, or this trade-off becomes a problem, this is the value to
+  // revisit - re-verify with the sandbox's worst-case invoices
+  // (Playwright print-to-PDF + pypdf page count) before changing it.
+  .bill-signature-row {
+    margin-top: 6rem;
+    padding-top: 0.1rem;
+    font-size: 0.82rem;
+  }
+
+  .signature-box {
+    min-width: 160px;
+    padding-top: 0.12rem;
+  }
+
+  .bill-signature-shop-line + .bill-signature-shop-line {
+    margin-top: 0.1rem;
+  }
+}
+
+@media screen and (max-width: 720px) {
+  .bill-meta-row {
+    gap: 0.6rem 1.5rem;
+  }
+
+  .bill-summary-row {
+    flex-direction: column;
+  }
+
+  .bill-grand-box {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .bill-signature-row {
+    flex-direction: column;
+    gap: 2rem;
+  }
+}

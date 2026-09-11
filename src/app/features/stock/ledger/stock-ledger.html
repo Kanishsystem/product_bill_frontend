@@ -1,0 +1,189 @@
+<div class="page-header">
+  <div>
+    <h1>Stock</h1>
+    <p class="page-subtitle">Stock-on-hand per product, the full unit-by-unit ledger, and a quick IMEI/Serial lookup for the billing counter.</p>
+  </div>
+</div>
+
+<div class="card lookup-card">
+  <div class="field lookup-field">
+    <label>Scan or type an IMEI / Serial No.</label>
+    <div class="lookup-row">
+      <input type="text" [(ngModel)]="lookupCode" (keyup.enter)="lookup()" placeholder="e.g. 356789012345678" />
+      <button type="button" class="btn btn-primary" (click)="lookup()" [disabled]="lookingUp()">
+        <app-icon name="barcode" [size]="16"></app-icon>
+        Lookup
+      </button>
+    </div>
+  </div>
+
+  @if (lookupResult(); as r) {
+    <div class="lookup-result">
+      <span class="badge badge-success">In stock</span>
+      <strong>{{ r.product_name }}</strong>
+      <span class="lookup-meta">{{ r.category_name }} · {{ r.imei1 || r.serial_no || r.batch_no || '—' }}</span>
+      <span class="lookup-meta">Selling price ₹{{ r.selling_price }}</span>
+    </div>
+  }
+  @if (lookupError()) {
+    <div class="lookup-result error">
+      <span class="badge badge-danger">Not available</span>
+      {{ lookupError() }}
+    </div>
+  }
+</div>
+
+<div class="tabs">
+  <button type="button" [class.active]="activeTab === 'summary'" (click)="setTab('summary')">Stock Summary</button>
+  <button type="button" [class.active]="activeTab === 'ledger'" (click)="setTab('ledger')">Unit Ledger</button>
+</div>
+
+@if (activeTab === 'summary') {
+  <div class="card filter-bar">
+    @if (!lowStockOnly) {
+      <div class="field search-field">
+        <label>Search</label>
+        <input type="text" [(ngModel)]="summarySearch" (ngModelChange)="loadSummary()" placeholder="Product name..." />
+      </div>
+    }
+    <label class="low-stock-toggle">
+      <input type="checkbox" [ngModel]="lowStockOnly" (ngModelChange)="toggleLowStockOnly($event)" />
+      <span>Compare low stock only</span>
+    </label>
+  </div>
+
+  <div class="card">
+    @if (loading()) {
+      <p class="loading-text">Loading...</p>
+    } @else if (summary().length === 0 && lowStockOnly) {
+      <app-empty-state icon="stock" title="Nothing is low on stock right now" subtitle="Every product is above its low-stock threshold."></app-empty-state>
+    } @else if (summary().length === 0) {
+      <app-empty-state icon="stock" title="No products with stock history yet"></app-empty-state>
+    } @else {
+      @if (lowStockOnly) {
+        <p class="low-stock-count">
+          {{ summary().length }} product{{ summary().length === 1 ? '' : 's' }} at or below their low-stock threshold, worst first.
+        </p>
+      }
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>On Hand</th>
+              <th>Low-Stock Threshold</th>
+              @if (lowStockOnly) {
+                <th>Short By</th>
+              }
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of summary(); track row.product_id) {
+              <tr [class.row-critical]="lowStockOnly && row.on_hand <= 0">
+                <td data-label="Product" class="cell-strong">{{ row.product_name }}</td>
+                <td data-label="Category">{{ row.category_name }}</td>
+                <td data-label="On Hand">{{ row.on_hand }} {{ row.unit }}</td>
+                <td data-label="Threshold">{{ row.low_stock_threshold }}</td>
+                @if (lowStockOnly) {
+                  <td data-label="Short By" class="cell-strong shortfall-cell">{{ shortfall(row) }} {{ row.unit }}</td>
+                }
+                <td data-label="Status">
+                  @if (row.is_low_stock) {
+                    <span class="badge badge-warning">
+                      <app-icon name="warning" [size]="13"></app-icon>
+                      Low stock
+                    </span>
+                  } @else {
+                    <span class="badge badge-success">OK</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+}
+
+@if (activeTab === 'ledger') {
+  <div class="card filter-bar">
+    <div class="field search-field">
+      <label>Search</label>
+      <input type="text" [(ngModel)]="ledgerSearch" (ngModelChange)="loadLedger()" placeholder="IMEI, Serial, batch or product..." />
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select [(ngModel)]="ledgerStatus" (ngModelChange)="loadLedger()">
+        <option value="">All</option>
+        <option value="in_stock">In stock</option>
+        <option value="sold">Sold</option>
+        <option value="returned">Returned</option>
+        <option value="damaged">Damaged</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    @if (loading()) {
+      <p class="loading-text">Loading...</p>
+    } @else if (ledger().length === 0) {
+      <app-empty-state icon="stock" title="No stock units match this filter"></app-empty-state>
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>IMEI / Serial / Batch</th>
+              <th>Qty</th>
+              <th>Purchase ₹</th>
+              <th>Selling ₹</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of ledger(); track item.id) {
+              <tr>
+                <td data-label="Product" class="cell-strong">{{ item.product_name }}</td>
+                <td data-label="IMEI / Serial / Batch">
+                  {{ item.imei1 || item.serial_no || item.batch_no || '—' }}
+                  @if (item.imei2) {
+                    <span class="secondary-imei">/ {{ item.imei2 }}</span>
+                  }
+                </td>
+                <td data-label="Qty">{{ item.quantity }}</td>
+                <td data-label="Purchase ₹">₹{{ item.purchase_price }}</td>
+                <td data-label="Selling ₹">₹{{ item.selling_price }}</td>
+                <td data-label="Status">
+                  <span
+                    class="badge"
+                    [class.badge-success]="item.status === 'in_stock'"
+                    [class.badge-danger]="item.status === 'damaged'"
+                    [class.badge-warning]="item.status === 'returned'"
+                    [class.badge-neutral]="item.status === 'sold'"
+                  >
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td class="cell-actions">
+                  @if (item.status === 'in_stock') {
+                    <button type="button" class="icon-link" title="Mark returned" (click)="adjust(item, 'returned')">
+                      <app-icon name="logout" [size]="16"></app-icon>
+                    </button>
+                    <button type="button" class="icon-link danger" title="Mark damaged" (click)="adjust(item, 'damaged')">
+                      <app-icon name="warning" [size]="16"></app-icon>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+}

@@ -1,0 +1,342 @@
+<div class="page-header no-print">
+  <div>
+    <h1>Invoice</h1>
+    <p class="page-subtitle">Select returned items and click "Return Selected" — stock is put back automatically.</p>
+  </div>
+  <div class="header-actions">
+    @if (invoice(); as headerInv) {
+      @if (headerInv.status === 'completed') {
+        <a [routerLink]="['/sales', invoiceId, 'edit']" class="btn btn-secondary" title="Fix a mistake on this bill">Edit</a>
+      }
+    }
+    <button type="button" class="btn btn-secondary" (click)="print()">Print</button>
+    <a routerLink="/sales" class="btn btn-secondary">Back to list</a>
+  </div>
+</div>
+
+@if (loading()) {
+  <p class="loading-text no-print">Loading...</p>
+} @else if (invoice(); as inv) {
+  <div class="card invoice-card tax-invoice">
+    <div class="bill-top-row">
+      <span class="bill-top-left">
+        @if (company()?.gstin) {
+          GSTIN: {{ company()?.gstin }}
+        }
+      </span>
+      <strong class="bill-top-center">TAX INVOICE</strong>
+      <span class="bill-top-right">
+        @if (company()?.phone) {
+          Mobile: {{ company()?.phone }}
+        }
+      </span>
+    </div>
+    @if (headerImageUrl(); as headerImg) {
+      <img class="bill-shop-header-image" [src]="headerImg" alt="{{ company()?.shop_name || 'Your Shop' }}" />
+    } @else {
+      <div class="bill-shop-name">{{ company()?.shop_name || 'Your Shop' }}</div>
+      @if (company()?.address) {
+        <div class="bill-shop-address">{{ company()?.address }}</div>
+      }
+    }
+
+    <hr class="bill-rule" />
+
+    <div class="bill-meta-row">
+      <span><strong>No:</strong> {{ inv.invoice_no }}</span>
+      <span><strong>Date:</strong> {{ inv.invoice_date | date: 'dd-MM-yyyy' }}</span>
+      <span
+        class="badge no-print"
+        [class.badge-success]="inv.status === 'completed'"
+        [class.badge-warning]="inv.status === 'partially_returned'"
+        [class.badge-danger]="inv.status === 'returned' || inv.status === 'cancelled'"
+      >
+        {{ inv.status.replace('_', ' ') }}
+      </span>
+    </div>
+
+    <div class="bill-to">
+      <span class="bill-to-label">To:</span>
+      <div class="bill-to-name">{{ inv.customer_name }}</div>
+      @if (inv.customer_address) {
+        <div class="bill-to-address">{{ inv.customer_address }}</div>
+      }
+      @if (inv.customer_phone) {
+        <div class="bill-to-phone">{{ inv.customer_phone }}</div>
+      }
+      @if (inv.customer_gstin) {
+        <div class="bill-to-gstin">GSTIN: {{ inv.customer_gstin }}</div>
+      }
+    </div>
+
+    <div class="table-wrap">
+      <table class="tax-items-table">
+        <colgroup>
+          <col class="no-print col-check" />
+          <col class="col-sno" />
+          <col class="col-particulars" />
+          <col class="col-rate" />
+          <col class="col-qty" />
+          <col class="col-gst" />
+          <col class="col-amount" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="no-print"></th>
+            <th class="col-sno">SNo</th>
+            <th>Item Particulars</th>
+            <th class="num">Rate</th>
+            <th class="num">Qty</th>
+            <th class="num">GST</th>
+            <th class="num">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of inv.items; track item.id; let i = $index) {
+            <tr>
+              <td class="no-print">
+                @if (item.status === 'active') {
+                  <input type="checkbox" [checked]="selectedItemIds.has(item.id)" (change)="toggleSelect(item.id)" />
+                }
+              </td>
+              <td class="col-sno">{{ i + 1 }}</td>
+              <td data-label="Item Particulars">
+                <div class="item-name">{{ item.product_name }}</div>
+                <div class="item-meta">
+                  @if (item.hsn_sac_code) {
+                    <span>HSN: {{ item.hsn_sac_code }}</span>
+                  }
+                  @if (item.imei1 || item.serial_no) {
+                    <span>
+                      S/N: {{ item.imei1 || item.serial_no }}@if (item.imei2) {
+                        / {{ item.imei2 }}
+                      }
+                    </span>
+                  }
+                </div>
+                @if (item.status === 'returned') {
+                  <span class="badge badge-warning">returned</span>
+                }
+              </td>
+              <td class="num" data-label="Rate">{{ num(item.sale_price) | number: '1.2-2' }}</td>
+              <td class="num" data-label="Qty">{{ item.quantity }} {{ item.unit }}</td>
+              <td class="num" data-label="GST %">{{ num(item.gst_rate) }}%</td>
+              <td class="num" data-label="Amount">{{ num(item.line_amount) | number: '1.2-2' }}</td>
+            </tr>
+          }
+          @if (blankRowCount() > 0) {
+            <tr class="blank-item-row">
+              <td class="no-print"></td>
+              <td colspan="6" [style.--blank-lines]="blankRowCount()"></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (hasAnyWarranty()) {
+      <div class="bill-warranty-row">
+        <span class="bill-warranty-label">Warranty :</span>
+        <span class="bill-warranty-item">
+          <span class="bill-warranty-heading">Years</span> {{ warrantyYears() }}
+        </span>
+        <span class="bill-warranty-item">
+          <span class="bill-warranty-heading">Months</span> {{ warrantyMonths() }}
+        </span>
+      </div>
+    }
+
+    <div class="bill-summary-row">
+      <div class="table-wrap gst-summary-wrap">
+        <table class="gst-summary-table">
+          <thead>
+            <tr>
+              <th>Details</th>
+              <th class="num">Sales</th>
+              @if (inv.tax_type === 'IGST') {
+                <th class="num">IGST %</th>
+                <th class="num">IGST</th>
+              } @else {
+                <th class="num">CGST %</th>
+                <th class="num">CGST</th>
+                <th class="num">SGST %</th>
+                <th class="num">SGST</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (g of gstBreakdown(); track g.rate) {
+              <tr>
+                <td>GST{{ g.rate }}%</td>
+                <td class="num">{{ g.taxable | number: '1.2-2' }}</td>
+                @if (inv.tax_type === 'IGST') {
+                  <td class="num">{{ g.rate }}</td>
+                  <td class="num">{{ g.igst | number: '1.2-2' }}</td>
+                } @else {
+                  <td class="num">{{ g.rate / 2 }}</td>
+                  <td class="num">{{ g.cgst | number: '1.2-2' }}</td>
+                  <td class="num">{{ g.rate / 2 }}</td>
+                  <td class="num">{{ g.sgst | number: '1.2-2' }}</td>
+                }
+              </tr>
+            }
+            <tr class="gst-total-row">
+              <td>Total</td>
+              <td class="num">{{ num(inv.taxable_amount) | number: '1.2-2' }}</td>
+              @if (inv.tax_type === 'IGST') {
+                <td></td>
+                <td class="num">{{ num(inv.igst_amount) | number: '1.2-2' }}</td>
+              } @else {
+                <td></td>
+                <td class="num">{{ num(inv.cgst_amount) | number: '1.2-2' }}</td>
+                <td></td>
+                <td class="num">{{ num(inv.sgst_amount) | number: '1.2-2' }}</td>
+              }
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bill-grand-box">
+        @if (hasBillDiscount()) {
+          <div class="grand-row">
+            <span>Discount ({{ inv.bill_discount_percent }}%)</span>
+            <span>−₹{{ num(inv.bill_discount_amount) | number: '1.2-2' }}</span>
+          </div>
+        }
+        <div class="grand-row">
+          <span>Total :</span>
+          <span>₹{{ billBeforeRound() | number: '1.2-2' }}</span>
+        </div>
+        <div class="grand-row">
+          <span>Round Off :</span>
+          <span>₹{{ num(inv.round_off) | number: '1.2-2' }}</span>
+        </div>
+        <div class="grand-row">
+          <span>Paid :</span>
+          <span>₹{{ num(inv.amount_paid) | number: '1.2-2' }}</span>
+        </div>
+        @if (hasBalanceDue()) {
+          <div class="grand-row balance-due">
+            <span>Balance Due :</span>
+            <span>₹{{ num(inv.balance_due) | number: '1.2-2' }}</span>
+          </div>
+        }
+        @if (hasRefundDue()) {
+          <div class="grand-row refund-due">
+            <span>Refund Due :</span>
+            <span>₹{{ num(inv.refund_due) | number: '1.2-2' }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="bill-qty-row">
+      <span>Total Qty: {{ totalQuantity() }}</span>
+      <span class="grand-total">Grand Total : ₹{{ num(inv.total_amount) | number: '1.2-2' }}</span>
+    </div>
+
+    @if (termsLines().length > 0) {
+      <div class="bill-terms">
+        <strong>குறிப்பு :</strong>
+        <ol>
+          @for (line of termsLines(); track $index) {
+            <li>{{ line }}</li>
+          }
+        </ol>
+        <div class="bill-terms-eoe">E&amp;O.E</div>
+      </div>
+    }
+
+    <div class="bill-signature-row">
+      <div class="signature-box">வாடிக்கையாளர் கையொப்பம்</div>
+      <div class="signature-box">
+        @for (line of shopSignatureLines(); track $index) {
+          <div class="bill-signature-shop-line">{{ line }}</div>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (hasRefundDue()) {
+    <div class="card refund-banner no-print">
+      <h2>Refund Due to Customer</h2>
+      <p class="page-subtitle">
+        A return has brought this invoice's total below what was already paid. Hand back
+        <strong>₹{{ num(inv.refund_due) | number: '1.2-2' }}</strong> to the customer.
+      </p>
+    </div>
+  }
+
+  @if (hasBalanceDue()) {
+    <div class="card payment-form no-print">
+      <h2>Record a Payment</h2>
+      <p class="page-subtitle">Balance due: ₹{{ num(inv.balance_due) | number: '1.2-2' }}</p>
+      <div class="payment-fields">
+        <div class="field">
+          <label>Amount</label>
+          <input
+            type="number"
+            min="0.01"
+            step="0.01"
+            [(ngModel)]="paymentAmount"
+            placeholder="0.00"
+          />
+        </div>
+        <div class="field">
+          <label>Mode</label>
+          <select [(ngModel)]="paymentMode">
+            <option value="cash">Cash</option>
+            <option value="card">Card</option>
+            <option value="upi">UPI</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="field note-field">
+          <label>Note (optional)</label>
+          <input type="text" [(ngModel)]="paymentNote" placeholder="e.g. Paid at shop counter" />
+        </div>
+        <button type="button" class="btn btn-primary" [disabled]="recordingPayment()" (click)="recordPayment()">
+          Record Payment
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (payments().length > 0) {
+    <div class="card payment-history no-print">
+      <h2>Payment History</h2>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Mode</th>
+              <th>Note</th>
+              <th>Recorded By</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of payments(); track p.id) {
+              <tr>
+                <td data-label="Date">{{ p.received_at }}</td>
+                <td data-label="Amount" class="cell-strong">₹{{ num(p.amount) | number: '1.2-2' }}</td>
+                <td data-label="Mode">{{ p.payment_mode }}</td>
+                <td data-label="Note">{{ p.note || '—' }}</td>
+                <td data-label="Recorded By">{{ p.received_by_name || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <div class="card return-bar no-print">
+    <span>{{ selectedItemIds.size }} item(s) selected</span>
+    <button type="button" class="btn btn-danger" [disabled]="selectedItemIds.size === 0" (click)="returnSelected()">
+      Return Selected
+    </button>
+  </div>
+}

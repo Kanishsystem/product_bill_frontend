@@ -1,0 +1,108 @@
+<div class="page-header">
+  <div>
+    <h1>Sales / Billing</h1>
+    <p class="page-subtitle">Every completed sale here can be returned unit-by-unit — stock is put back automatically.</p>
+  </div>
+  <a routerLink="/sales/new" class="btn btn-primary">
+    <app-icon name="plus" [size]="16"></app-icon>
+    New Sale
+  </a>
+</div>
+
+<div class="card filter-bar">
+  @if (!pendingOnly) {
+    <div class="field search-field">
+      <label>Search</label>
+      <input type="text" [(ngModel)]="search" (ngModelChange)="load()" placeholder="Invoice no, customer, phone..." />
+    </div>
+    <div class="field">
+      <label>From</label>
+      <input type="date" [(ngModel)]="fromDate" (ngModelChange)="load()" />
+    </div>
+    <div class="field">
+      <label>To</label>
+      <input type="date" [(ngModel)]="toDate" (ngModelChange)="load()" />
+    </div>
+    @if (search || fromDate || toDate) {
+      <button type="button" class="btn btn-secondary" (click)="clearFilters()">Clear</button>
+    }
+  } @else {
+    <div class="field search-field">
+      <label>Search</label>
+      <input type="text" [(ngModel)]="search" (ngModelChange)="load()" placeholder="Invoice no, customer, phone..." />
+    </div>
+  }
+  <label class="low-stock-toggle">
+    <input type="checkbox" [ngModel]="pendingOnly" (ngModelChange)="togglePendingOnly($event)" />
+    <span>Compare pending payments only</span>
+  </label>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <p class="loading-text">Loading...</p>
+  } @else if (invoices().length === 0 && pendingOnly) {
+    <app-empty-state icon="sales" title="No pending payments" subtitle="Every invoice has been paid in full."></app-empty-state>
+  } @else if (invoices().length === 0) {
+    <app-empty-state icon="sales" title="No sales recorded yet"></app-empty-state>
+  } @else {
+    @if (pendingOnly) {
+      <p class="low-stock-count">
+        {{ invoices().length }} invoice{{ invoices().length === 1 ? '' : 's' }} with a balance due, largest first.
+      </p>
+    }
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Invoice No</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Tax</th>
+            <th>Total</th>
+            <th>Payment</th>
+            @if (pendingOnly) {
+              <th>Balance Due</th>
+            } @else {
+              <th>Status</th>
+            }
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (inv of invoices(); track inv.id) {
+            <tr [class.row-critical]="pendingOnly && isFullyUnpaid(inv)">
+              <td data-label="Invoice No" class="cell-strong">{{ inv.invoice_no }}</td>
+              <td data-label="Date">{{ inv.invoice_date }}</td>
+              <td data-label="Customer">{{ inv.customer_name }}</td>
+              <td data-label="Tax">
+                <span class="badge badge-neutral">{{ inv.tax_type === 'IGST' ? 'IGST' : 'CGST+SGST' }}</span>
+              </td>
+              <td data-label="Total" class="cell-strong">₹{{ inv.total_amount }}</td>
+              <td data-label="Payment">{{ inv.payment_mode }}</td>
+              @if (pendingOnly) {
+                <td data-label="Balance Due" class="cell-strong shortfall-cell">₹{{ num(inv.balance_due) | number: '1.2-2' }}</td>
+              } @else {
+                <td data-label="Status">
+                  <span
+                    class="badge"
+                    [class.badge-success]="inv.status === 'completed'"
+                    [class.badge-warning]="inv.status === 'partially_returned'"
+                    [class.badge-danger]="inv.status === 'returned' || inv.status === 'cancelled'"
+                  >
+                    {{ inv.status.replace('_', ' ') }}
+                  </span>
+                </td>
+              }
+              <td class="cell-actions">
+                <a [routerLink]="['/sales', inv.id]" class="icon-link" title="View">
+                  <app-icon name="chevronRight" [size]="16"></app-icon>
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

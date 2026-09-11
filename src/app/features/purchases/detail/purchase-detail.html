@@ -1,0 +1,185 @@
+<div class="page-header">
+  <div>
+    <h1>Purchase Detail</h1>
+    <p class="page-subtitle">Serialized units (IMEI/Serial) can be marked returned-to-supplier or damaged individually.</p>
+  </div>
+  <div class="header-actions">
+    @if (purchase(); as headerP) {
+      @if (!(headerP.items ?? []).some(i => i.stock_status !== 'in_stock')) {
+        <a [routerLink]="['/purchases', purchaseId, 'edit']" class="btn btn-secondary" title="Fix a mistake on this purchase">Edit</a>
+      }
+    }
+    <a routerLink="/purchases" class="btn btn-secondary">Back to list</a>
+  </div>
+</div>
+
+@if (loading()) {
+  <p class="loading-text">Loading...</p>
+} @else if (purchase(); as p) {
+  <div class="card summary-card">
+    <div class="summary-grid">
+      <div>
+        <span class="summary-label">Supplier</span>
+        <span class="summary-value">{{ p.supplier_name }}</span>
+      </div>
+      <div>
+        <span class="summary-label">Invoice No</span>
+        <span class="summary-value">{{ p.supplier_invoice_no }}</span>
+      </div>
+      <div>
+        <span class="summary-label">Date</span>
+        <span class="summary-value">{{ p.purchase_date }}</span>
+      </div>
+      <div>
+        <span class="summary-label">Tax Type</span>
+        <span class="badge badge-neutral">{{ p.tax_type === 'IGST' ? 'IGST' : 'CGST + SGST' }}</span>
+      </div>
+    </div>
+
+    <div class="totals-row">
+      <div><span class="summary-label">Taxable</span> ₹{{ p.taxable_amount }}</div>
+      @if (p.tax_type === 'IGST') {
+        <div><span class="summary-label">IGST</span> ₹{{ p.igst_amount }}</div>
+      } @else {
+        <div><span class="summary-label">CGST</span> ₹{{ p.cgst_amount }}</div>
+        <div><span class="summary-label">SGST</span> ₹{{ p.sgst_amount }}</div>
+      }
+      <div><span class="summary-label">Round Off</span> ₹{{ p.round_off }}</div>
+      <div class="total-amount"><span class="summary-label">Total</span> ₹{{ p.total_amount }}</div>
+    </div>
+
+    <div class="totals-row payment-summary-row">
+      <div><span class="summary-label">Payment Mode</span> {{ p.payment_mode }}</div>
+      <div><span class="summary-label">Paid</span> ₹{{ num(p.amount_paid) | number: '1.2-2' }}</div>
+      @if (num(p.balance_due) > 0) {
+        <div class="balance-due-highlight"><span class="summary-label">Balance Due</span> ₹{{ num(p.balance_due) | number: '1.2-2' }}</div>
+      }
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>HSN</th>
+            <th>Qty</th>
+            <th>Rate</th>
+            <th>GST</th>
+            <th>IMEI / Serial</th>
+            <th>Line Total</th>
+            <th>Stock Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of p.items; track item.id) {
+            <tr>
+              <td data-label="Product" class="cell-strong">{{ item.product_name }}</td>
+              <td data-label="HSN">{{ item.hsn_sac_code }}</td>
+              <td data-label="Qty">{{ item.quantity }} {{ item.unit }}</td>
+              <td data-label="Rate">₹{{ item.rate }}</td>
+              <td data-label="GST">{{ item.gst_rate }}%</td>
+              <td data-label="IMEI / Serial">
+                @if (item.imei1) {
+                  {{ item.imei1 }}@if (item.imei2) { / {{ item.imei2 }} }
+                } @else if (item.serial_no) {
+                  {{ item.serial_no }}
+                } @else {
+                  —
+                }
+              </td>
+              <td data-label="Line Total">₹{{ item.line_amount }}</td>
+              <td data-label="Stock Status">
+                @if (item.stock_status) {
+                  <span
+                    class="badge"
+                    [class.badge-success]="item.stock_status === 'in_stock'"
+                    [class.badge-danger]="item.stock_status === 'damaged'"
+                    [class.badge-warning]="item.stock_status === 'returned'"
+                    [class.badge-neutral]="item.stock_status === 'sold'"
+                  >
+                    {{ item.stock_status }}
+                  </span>
+                } @else {
+                  —
+                }
+              </td>
+              <td class="cell-actions">
+                @if (isUnitTracked(item) && item.stock_status === 'in_stock') {
+                  <button type="button" class="icon-link" title="Mark returned" (click)="markUnit(item, 'returned')">
+                    <app-icon name="logout" [size]="16"></app-icon>
+                  </button>
+                  <button type="button" class="icon-link danger" title="Mark damaged" (click)="markUnit(item, 'damaged')">
+                    <app-icon name="warning" [size]="16"></app-icon>
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (hasBalanceDue()) {
+    <div class="card payment-form">
+      <h2>Record a Payment</h2>
+      <p class="page-subtitle">Balance due: ₹{{ num(p.balance_due) | number: '1.2-2' }}</p>
+      <div class="payment-fields">
+        <div class="field">
+          <label>Amount</label>
+          <input type="number" min="0.01" step="0.01" [(ngModel)]="paymentAmount" placeholder="0.00" />
+        </div>
+        <div class="field">
+          <label>Mode</label>
+          <select [(ngModel)]="paymentMode">
+            <option value="cash">Cash</option>
+            <option value="card">Card</option>
+            <option value="upi">UPI</option>
+            <option value="credit">Credit</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="field note-field">
+          <label>Note (optional)</label>
+          <input type="text" [(ngModel)]="paymentNote" placeholder="e.g. Paid at supplier counter" />
+        </div>
+        <button type="button" class="btn btn-primary" [disabled]="recordingPayment()" (click)="recordPayment()">
+          Record Payment
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (payments().length > 0) {
+    <div class="card payment-history">
+      <h2>Payment History</h2>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Mode</th>
+              <th>Note</th>
+              <th>Recorded By</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (pay of payments(); track pay.id) {
+              <tr>
+                <td data-label="Date">{{ pay.paid_at }}</td>
+                <td data-label="Amount" class="cell-strong">₹{{ num(pay.amount) | number: '1.2-2' }}</td>
+                <td data-label="Mode">{{ pay.payment_mode }}</td>
+                <td data-label="Note">{{ pay.note || '—' }}</td>
+                <td data-label="Recorded By">{{ pay.paid_by_name || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+}

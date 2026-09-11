@@ -1,0 +1,78 @@
+<div class="shell" [class.sidebar-collapsed]="sidebarCollapsed()">
+  <aside class="sidebar" [class.mobile-open]="mobileMenuOpen()">
+    <div class="sidebar-brand">
+      <span class="brand-mark">PB</span>
+      @if (!sidebarCollapsed()) {
+        <span class="brand-name">Product Billing</span>
+      }
+    </div>
+
+    <nav class="sidebar-nav">
+      @for (item of navItems; track item.path) {
+        <a
+          class="nav-link"
+          [routerLink]="item.path"
+          [class.active]="isActive(item)"
+          (click)="closeMobileMenu()"
+        >
+          <app-icon [name]="item.icon" [size]="19"></app-icon>
+          @if (!sidebarCollapsed()) {
+            <span>{{ item.label }}</span>
+          }
+        </a>
+      }
+    </nav>
+
+    <button class="nav-link logout-link" type="button" (click)="logout()">
+      <app-icon name="logout" [size]="19"></app-icon>
+      @if (!sidebarCollapsed()) {
+        <span>Logout</span>
+      }
+    </button>
+  </aside>
+
+  @if (mobileMenuOpen()) {
+    <div class="sidebar-backdrop" (click)="closeMobileMenu()"></div>
+  }
+
+  <div class="shell-main">
+    <header class="topbar">
+      <button class="icon-btn hamburger" type="button" (click)="toggleMobileMenu()">
+        <app-icon name="menu" [size]="22"></app-icon>
+      </button>
+      <button class="icon-btn collapse-btn" type="button" (click)="toggleSidebar()">
+        <app-icon name="menu" [size]="20"></app-icon>
+      </button>
+
+      <div class="topbar-search">
+        <app-icon name="search" [size]="16" color="var(--text-muted)"></app-icon>
+        <input type="search" placeholder="Search products, IMEI, invoice no..." />
+      </div>
+
+      <div class="topbar-actions">
+        <button class="icon-btn" type="button" title="Notifications">
+          <app-icon name="bell" [size]="20"></app-icon>
+        </button>
+        <div class="user-chip">
+          <span class="user-avatar">{{ (auth.currentUser()?.name || '?').charAt(0) }}</span>
+          @if (auth.currentUser(); as user) {
+            <span class="user-name">{{ user.name }}</span>
+          }
+        </div>
+      </div>
+    </header>
+
+    <main class="shell-content">
+      <router-outlet></router-outlet>
+    </main>
+
+    <nav class="bottom-nav">
+      @for (item of bottomNavItems; track item.path) {
+        <a [routerLink]="item.path" [class.active]="isActive(item)">
+          <app-icon [name]="item.icon" [size]="20"></app-icon>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+  </div>
+</div>

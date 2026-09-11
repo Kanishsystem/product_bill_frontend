@@ -1,0 +1,385 @@
+.login-page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: stretch;
+  background: var(--brand-gradient);
+}
+
+// ---- Left hero panel: illustration + tagline, hidden on narrow screens ----
+
+.login-hero {
+  flex: 1 1 55%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 3rem 2.5rem;
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  text-align: center;
+}
+
+.hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.hero-blob-1 {
+  width: 320px;
+  height: 320px;
+  top: -80px;
+  left: -100px;
+}
+
+.hero-blob-2 {
+  width: 220px;
+  height: 220px;
+  bottom: -60px;
+  right: -40px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hero-illustration {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+}
+
+.hero-invoice-svg {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 18px 30px rgba(15, 23, 42, 0.25));
+}
+
+.floating-badge {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--brand-dark);
+  font-weight: 800;
+  font-size: 1.05rem;
+  box-shadow: var(--shadow-md);
+}
+
+.badge-coin {
+  top: 4%;
+  right: -6%;
+  color: #b8860b;
+}
+
+.badge-check {
+  bottom: 18%;
+  left: -8%;
+  color: var(--success);
+}
+
+.badge-cart {
+  top: 46%;
+  right: -12%;
+  color: var(--brand-dark);
+}
+
+.hero-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.hero-subtitle {
+  margin: 0;
+  max-width: 380px;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(6px);
+}
+
+// ---- Right panel: the actual sign-in form ----
+
+.login-panel {
+  flex: 1 1 45%;
+  min-width: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-app);
+  padding: 1.5rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 2rem;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 0.75rem;
+    border-radius: 13px;
+    background: var(--brand-gradient);
+    color: #fff;
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+    box-shadow: var(--shadow-md);
+  }
+
+  h1 {
+    margin: 0 0 0.25rem;
+    font-size: 1.4rem;
+    color: var(--text);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+}
+
+.login-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--danger-light);
+  color: var(--danger);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+
+  app-icon {
+    flex: none;
+  }
+}
+
+// ---- Icon-prefixed inputs (email/password) + the password show/hide toggle ----
+
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  app-icon {
+    position: absolute;
+    left: 0.75rem;
+    display: inline-flex;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  .password-toggle {
+    position: absolute;
+    right: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    color: var(--text-muted);
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
+
+    &:hover {
+      color: var(--text);
+      background: var(--bg-app);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--brand);
+      outline-offset: 1px;
+    }
+  }
+}
+
+.field .input-with-icon input {
+  width: 100%;
+  padding-left: 2.6rem;
+}
+
+.field .input-with-icon:has(.password-toggle) input {
+  padding-right: 2.5rem;
+}
+
+.login-submit {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.login-hint {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border);
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+
+  strong {
+    color: var(--text);
+  }
+}
+
+// ---- Motion: entrance + gentle floating loop, off entirely under reduced-motion ----
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes heroFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes cardFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(18px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes floatY {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes rowSweep {
+    from {
+      opacity: 0;
+      transform: translateX(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .login-hero > * {
+    animation: heroFadeIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .hero-illustration {
+    animation-delay: 0.05s;
+  }
+
+  .hero-title {
+    animation-delay: 0.15s;
+  }
+
+  .hero-subtitle {
+    animation-delay: 0.22s;
+  }
+
+  .hero-pill {
+    animation-delay: 0.3s;
+  }
+
+  .login-card {
+    animation: cardFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: 0.1s;
+  }
+
+  .hero-invoice-svg {
+    animation: floatY 5s ease-in-out infinite;
+  }
+
+  .badge-coin {
+    animation:
+      floatY 4s ease-in-out infinite,
+      heroFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay:
+      0.35s,
+      0.35s;
+  }
+
+  .badge-check {
+    animation:
+      floatY 4.6s ease-in-out infinite,
+      heroFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay:
+      0.45s,
+      0.45s;
+  }
+
+  .badge-cart {
+    animation:
+      floatY 4.2s ease-in-out infinite,
+      heroFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay:
+      0.55s,
+      0.55s;
+  }
+
+  .hero-invoice-row {
+    animation: rowSweep 0.4s ease both;
+    animation-delay: calc(0.5s + var(--row-i, 0) * 0.1s);
+    transform-box: fill-box;
+  }
+}
+
+// ---- Responsive: below ~960px, drop the hero panel entirely (matches the app's existing mobile-first approach) ----
+
+@media (max-width: 960px) {
+  .login-page {
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .login-hero {
+    display: none;
+  }
+
+  .login-panel {
+    background: none;
+    padding: 0;
+    min-width: 0;
+  }
+}

@@ -1,0 +1,68 @@
+<div class="page-header">
+  <div>
+    <h1>Category Master</h1>
+    <p class="page-subtitle">
+      Every category's flags drive which fields (IMEI / Serial / quantity-only) show up on Purchase and Sales.
+    </p>
+  </div>
+  <a routerLink="/categories/new" class="btn btn-primary">
+    <app-icon name="plus" [size]="16"></app-icon>
+    New Category
+  </a>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <p class="loading-text">Loading...</p>
+  } @else if (categories().length === 0) {
+    <app-empty-state
+      icon="categories"
+      title="No categories yet"
+      subtitle="Create your first category (Mobile, Home Appliance, Accessories...) to get started."
+    ></app-empty-state>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Sub-category</th>
+            <th>IMEI</th>
+            <th>Serial</th>
+            <th>Size</th>
+            <th>Attributes</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (cat of categories(); track cat.id) {
+            <tr>
+              <td data-label="Category" class="cell-strong">{{ cat.category_name }}</td>
+              <td data-label="Sub-category">{{ cat.sub_category || '—' }}</td>
+              <td data-label="IMEI">
+                <span class="badge" [class.badge-success]="cat.is_imei_required" [class.badge-neutral]="!cat.is_imei_required">
+                  {{ cat.is_imei_required ? 'Required' : 'No' }}
+                </span>
+              </td>
+              <td data-label="Serial">
+                <span class="badge" [class.badge-success]="cat.is_serial_required" [class.badge-neutral]="!cat.is_serial_required">
+                  {{ cat.is_serial_required ? 'Required' : 'No' }}
+                </span>
+              </td>
+              <td data-label="Size">{{ cat.size_type || '—' }}</td>
+              <td data-label="Attributes">{{ cat.attributes.length }}</td>
+              <td class="cell-actions">
+                <a [routerLink]="['/categories', cat.id, 'edit']" class="icon-link" title="Edit">
+                  <app-icon name="edit" [size]="16"></app-icon>
+                </a>
+                <button type="button" class="icon-link danger" title="Delete" (click)="remove(cat)">
+                  <app-icon name="trash" [size]="16"></app-icon>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

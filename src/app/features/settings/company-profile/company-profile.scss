@@ -1,0 +1,153 @@
+.page-header {
+  margin-bottom: 1.25rem;
+
+  h1 {
+    margin: 0 0 0.2rem;
+    font-size: 1.3rem;
+  }
+}
+
+.page-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.settings-form {
+  padding: 1.25rem 1.4rem;
+  max-width: 720px;
+
+  h2 {
+    font-size: 0.95rem;
+    margin: 1.25rem 0 0.75rem;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0 1rem;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.field-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.header-image-field input[type='file'] {
+  margin-top: 0.5rem;
+}
+
+.header-image-preview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+
+  img {
+    max-width: 320px;
+    max-height: 100px;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.5rem;
+    background: #fff;
+  }
+}
+
+.theme-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.theme-picker-field {
+  margin-bottom: 0;
+  flex: 1 1 260px;
+}
+
+.theme-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.theme-swatch-input {
+  width: 44px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  background: none;
+
+  &::-webkit-color-swatch-wrapper {
+    padding: 3px;
+  }
+
+  &::-webkit-color-swatch {
+    border: none;
+    border-radius: 5px;
+  }
+}
+
+.theme-hex {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.theme-reset-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--brand);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 0.25rem;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.theme-presets {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-top: 1.6rem;
+}
+
+.theme-preset-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--border);
+
+  &.active {
+    border-color: var(--bg-panel);
+    box-shadow:
+      0 0 0 1px var(--bg-panel),
+      0 0 0 3px var(--text);
+  }
+
+  &:hover {
+    transform: scale(1.08);
+  }
+}

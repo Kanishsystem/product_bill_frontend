@@ -1,0 +1,55 @@
+<div class="page-header">
+  <div>
+    <h1>{{ userId ? 'Edit' : 'New' }} User</h1>
+    <p class="page-subtitle">
+      Admin has full access. Cashier can bill and view stock. Inventory Manager handles purchase and stock, not billing.
+    </p>
+  </div>
+  <a routerLink="/users" class="btn btn-secondary">Back to list</a>
+</div>
+
+@if (!loading()) {
+  <form class="card form-card" (ngSubmit)="save()">
+    <div class="grid-2">
+      <div class="field">
+        <label for="name">Name</label>
+        <input id="name" name="name" type="text" [(ngModel)]="form.name" required />
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" [(ngModel)]="form.email" required />
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="username">Username <span class="field-optional">(optional)</span></label>
+        <input id="username" name="username" type="text" [(ngModel)]="form.username" placeholder="e.g. RASI MOBILES" />
+        <span class="field-hint">Lets this person sign in with a plain username instead of their email.</span>
+      </div>
+      <div class="field">
+        <label for="password">{{ userId ? 'New Password (leave blank to keep current)' : 'Password' }}</label>
+        <input id="password" name="password" type="password" [(ngModel)]="form.password" placeholder="At least 6 characters" />
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="role">Role</label>
+        <select id="role" name="role" [(ngModel)]="form.role" [disabled]="isSelf()">
+          <option value="admin">Admin — full access</option>
+          <option value="cashier">Cashier — billing + limited stock view</option>
+          <option value="inventory_manager">Inventory Manager — purchase + stock, no billing</option>
+        </select>
+        @if (isSelf()) {
+          <span class="field-hint">You can't change your own role.</span>
+        }
+      </div>
+    </div>
+
+    <button class="btn btn-primary" type="submit" [disabled]="saving()">
+      {{ saving() ? 'Saving...' : userId ? 'Save changes' : 'Create user' }}
+    </button>
+  </form>
+}
+

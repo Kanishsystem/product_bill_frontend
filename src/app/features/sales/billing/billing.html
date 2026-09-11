@@ -1,0 +1,435 @@
+<div class="page-header">
+  <div>
+    <h1>{{ editMode() ? 'Edit Invoice' : 'New Sale' }}</h1>
+    <p class="page-subtitle">
+      @if (editMode()) {
+        Fixing a mistake on {{ editInvoiceNo() }}? Change the items/customer/date below and save - the invoice number stays the same.
+      } @else {
+        Scan a barcode/IMEI/Serial for the fastest add, or search a product by name in the table below.
+      }
+    </p>
+  </div>
+  <a [routerLink]="editMode() ? ['/sales', editInvoiceId] : ['/sales']" class="btn btn-secondary">{{ editMode() ? 'Back to invoice' : 'Back to list' }}</a>
+</div>
+
+@if (loadingForEdit()) {
+  <p class="loading-text">Loading invoice...</p>
+}
+
+<div class="card counter-bar">
+  <div class="counter-field counter-static">
+    <span class="counter-label">Bill No</span>
+    <span class="counter-value">{{ editMode() ? editInvoiceNo() : 'New Bill' }}</span>
+  </div>
+  <div class="counter-field counter-static">
+    <span class="counter-label">Date</span>
+    <input type="date" class="counter-date" [(ngModel)]="invoiceDate" name="invoice_date" />
+  </div>
+  <div class="counter-field counter-customer combo-field">
+    <span class="counter-label">Customer</span>
+    <div class="counter-customer-input">
+      <app-icon name="parties" [size]="15"></app-icon>
+      <input
+        id="customer"
+        name="customer"
+        type="text"
+        autocomplete="off"
+        [(ngModel)]="customerSearch"
+        (ngModelChange)="onCustomerSearchChange()"
+        (focus)="openCustomerDropdown()"
+        (blur)="onCustomerBlur()"
+        placeholder="Search customer by name or phone..."
+      />
+      @if (customerSearch) {
+        <button type="button" class="input-clear-btn" title="Clear customer" (mousedown)="clearCustomerSelection()">
+          <app-icon name="close" [size]="12"></app-icon>
+        </button>
+      }
+    </div>
+    @if (customerDropdownOpen()) {
+      <div class="combo-dropdown">
+        @if (filteredCustomers().length === 0) {
+          <p class="empty-hint">No customers match.</p>
+        } @else {
+          @for (c of filteredCustomers(); track c.id) {
+            <button type="button" class="combo-row combo-row-customer" (mousedown)="selectCustomer(c)">
+              <span class="combo-row-main">
+                <span class="cell-strong">{{ c.name }}</span>
+                @if (c.address) {
+                  <span class="result-address">{{ c.address }}</span>
+                }
+              </span>
+              @if (c.phone) {
+                <span class="result-meta">{{ c.phone }}</span>
+              }
+            </button>
+          }
+        }
+      </div>
+    }
+    <button type="button" class="inline-link-btn" (click)="showQuickCustomer.set(!showQuickCustomer())">
+      + Add walk-in customer
+    </button>
+  </div>
+  <div class="counter-field counter-scanner">
+    <span class="counter-label">Barcode Scanner</span>
+    <div class="scan-row">
+      <input
+        type="text"
+        class="scan-input"
+        [(ngModel)]="scanCode"
+        (keyup.enter)="lookupScan()"
+        placeholder="Scan barcode here..."
+        [disabled]="cartFull()"
+      />
+      <button type="button" class="icon-link" title="Camera scan" (click)="onCameraScanClick()" [disabled]="cartFull()">
+        <app-icon name="camera" [size]="16"></app-icon>
+      </button>
+      <button type="button" class="btn btn-primary btn-sm" (click)="lookupScan()" [disabled]="scanning() || cartFull()">
+        <app-icon name="barcode" [size]="15"></app-icon>
+      </button>
+    </div>
+    @if (cartFull()) {
+      <span class="scan-full-hint">5-item max reached for this bill.</span>
+    }
+  </div>
+  @if (!editMode()) {
+    <button type="button" class="btn-clear" (click)="clearBill()">
+      <app-icon name="trash" [size]="14"></app-icon>
+      Clear
+    </button>
+  }
+</div>
+
+@if (showQuickCustomer()) {
+  <div class="card quick-customer-card">
+    <div class="quick-customer-row">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" [(ngModel)]="quickCustomerName" name="quick_name" placeholder="Customer name" />
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input type="text" [(ngModel)]="quickCustomerPhone" name="quick_phone" placeholder="Optional" />
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" [(ngModel)]="quickCustomerEmail" name="quick_email" placeholder="Optional" />
+      </div>
+      <div class="field">
+        <label>GSTIN</label>
+        <input type="text" [(ngModel)]="quickCustomerGstin" name="quick_gstin" placeholder="Optional" />
+      </div>
+      <div class="field field-address">
+        <label>Address</label>
+        <input type="text" [(ngModel)]="quickCustomerAddress" name="quick_address" placeholder="Optional" />
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="addQuickCustomer()">Add</button>
+    </div>
+  </div>
+}
+
+@if (pickerProduct(); as pp) {
+  <div class="card form-card picker-card">
+    <div class="picker-header">
+      <span>Available units — {{ pp.name }}</span>
+      <button type="button" class="icon-link" (click)="closePicker()">
+        <app-icon name="close" [size]="16"></app-icon>
+      </button>
+    </div>
+    @if (pickerLoading()) {
+      <p class="loading-text">Loading...</p>
+    } @else if (pickerUnits().length === 0) {
+      <p class="loading-text">No in-stock units for this product.</p>
+    } @else {
+      <div class="unit-picker-list">
+        @for (u of pickerUnits(); track u.id) {
+          <button type="button" class="unit-picker-row" (click)="pickUnit(u)">
+            <span>{{ u.imei1 || u.serial_no }}</span>
+            @if (u.imei2) {
+              <span class="result-meta">/ {{ u.imei2 }}</span>
+            }
+            <span class="result-meta">₹{{ u.selling_price }}</span>
+          </button>
+        }
+      </div>
+    }
+  </div>
+}
+
+<div class="billing-layout">
+  <div class="card items-card">
+    <div class="items-table-wrap">
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th class="col-product">Product <span class="th-hint">(search or add)</span></th>
+            <th class="col-variant">Variant</th>
+            <th class="col-qty">Qty</th>
+            <th class="col-money">Rate (incl. GST) (₹)</th>
+            <th class="col-gst">GST%</th>
+            <th class="col-money">Amount (₹)</th>
+            <th class="col-action"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of cart(); track line.key; let i = $index) {
+            <tr>
+              <td class="col-index">{{ i + 1 }}</td>
+              <td class="col-product">
+                <span class="cell-strong">{{ line.productName }}</span>
+                <span class="result-meta">
+                  {{ line.categoryName }}
+                  @if (line.imei1) {
+                    · IMEI {{ line.imei1 }}
+                  } @else if (line.serialNo) {
+                    · Serial {{ line.serialNo }}
+                  }
+                </span>
+              </td>
+              <td class="col-variant">
+                <span class="variant-value">{{ line.brand || '—' }}</span>
+              </td>
+              <td class="col-qty">
+                @if (line.isSerialized) {
+                  <input type="number" class="cell-input" [value]="1" disabled />
+                } @else {
+                  <input type="number" class="cell-input" min="1" step="1" [(ngModel)]="line.quantity" [name]="'qty_' + line.key" />
+                }
+              </td>
+              <td class="col-money">
+                <input
+                  type="number"
+                  class="cell-input"
+                  min="0"
+                  step="0.01"
+                  [ngModel]="lineRateInclusive(line)"
+                  (ngModelChange)="onLineRateInclusiveChange(line, $event)"
+                  [name]="'rate_' + line.key"
+                />
+              </td>
+              <td class="col-gst">
+                <input type="number" class="cell-input" min="0" step="0.01" [(ngModel)]="line.gstRate" [name]="'gst_' + line.key" />
+              </td>
+              <td class="col-money">
+                <span class="computed-value computed-strong">₹{{ lineTotal(line) | number: '1.2-2' }}</span>
+              </td>
+              <td class="col-action">
+                <button
+                  type="button"
+                  class="icon-link"
+                  title="Discount / warranty"
+                  [class.active]="isLineDetailsOpen(line.key)"
+                  (click)="toggleLineDetails(line.key)"
+                >
+                  <app-icon name="chevronDown" [size]="14"></app-icon>
+                </button>
+                <button type="button" class="icon-link danger" title="Remove" (click)="removeLine(line.key)">
+                  <app-icon name="trash" [size]="14"></app-icon>
+                </button>
+              </td>
+            </tr>
+            @if (isLineDetailsOpen(line.key)) {
+              <tr class="expand-row">
+                <td colspan="8">
+                  <div class="line-details">
+                    <label>
+                      Line Disc %
+                      <input type="number" min="0" max="100" step="0.01" [(ngModel)]="line.discountPercent" [name]="'disc_' + line.key" />
+                    </label>
+                    <label>
+                      Warranty (yrs)
+                      <input type="number" min="0" step="1" [(ngModel)]="line.warrantyYears" [name]="'wy_' + line.key" />
+                    </label>
+                    <label>
+                      Warranty (mo)
+                      <input type="number" min="0" max="11" step="1" [(ngModel)]="line.warrantyMonths" [name]="'wm_' + line.key" />
+                    </label>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+          @if (cartFull()) {
+            <tr>
+              <td class="col-index"></td>
+              <td class="col-product" colspan="7">
+                <p class="cart-full-note">
+                  This bill already has {{ cart().length }} items — the max for one invoice, so it always prints on
+                  one page. Remove an item to add a different one, or check out this bill and start a new one for
+                  anything more.
+                </p>
+              </td>
+            </tr>
+          } @else {
+            <tr>
+              <td class="col-index"></td>
+              <td class="col-product" colspan="7">
+                <div class="combo-field draft-row">
+                  <div class="combo-input-wrap">
+                    <input
+                      type="text"
+                      autocomplete="off"
+                      placeholder="Search and select a product to add..."
+                      [(ngModel)]="productSearch"
+                      name="draft_product_search"
+                      (ngModelChange)="onProductSearchChange()"
+                      (focus)="openProductDropdown()"
+                      (blur)="onProductBlur()"
+                    />
+                    @if (productDropdownOpen()) {
+                      <div class="combo-dropdown">
+                        @if (filteredProducts().length === 0) {
+                          <p class="empty-hint">No products match.</p>
+                        } @else {
+                          @for (p of filteredProducts(); track p.id) {
+                            <button type="button" class="combo-row" (mousedown)="selectProduct(p)">
+                              <span class="cell-strong">{{ p.name }}</span>
+                              <span class="result-meta">{{ p.category_name }} · ₹{{ p.selling_price }}</span>
+                              <span class="combo-row-badges">
+                                @if ((p.on_hand ?? 0) > 0) {
+                                  <span class="badge badge-success">{{ p.on_hand }} in stock</span>
+                                } @else {
+                                  <span class="badge badge-danger">Out of stock</span>
+                                }
+                                @if (p.is_imei_required || p.is_serial_required) {
+                                  <span class="badge badge-neutral">Pick unit</span>
+                                }
+                              </span>
+                            </button>
+                          }
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (cart().length === 0) {
+      <div class="empty-state">
+        <app-icon name="cart" [size]="32"></app-icon>
+        <p>Search and select a product in the row above to add items.</p>
+      </div>
+    }
+  </div>
+
+  <div class="card summary-card">
+    <div class="summary-header">
+      <h2>Bill Summary</h2>
+      <span class="badge-count">{{ cart().length }} item{{ cart().length === 1 ? '' : 's' }}</span>
+    </div>
+
+    <div class="summary-discount-row">
+      <label>
+        Discount %
+        <input
+          type="number"
+          min="0"
+          max="100"
+          step="0.01"
+          [ngModel]="billDiscountPercentDisplay()"
+          (ngModelChange)="onBillDiscountPercentChange($event)"
+          name="bill_disc_percent"
+        />
+      </label>
+      <label>
+        Discount Amount (₹)
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          [ngModel]="billDiscountAmount()"
+          (ngModelChange)="onBillDiscountAmountChange($event)"
+          name="bill_disc_amount"
+        />
+      </label>
+    </div>
+
+    <div class="summary-totals">
+      <div class="summary-row">
+        <span>Subtotal</span>
+        <span>₹{{ subtotal() | number: '1.2-2' }}</span>
+      </div>
+      @if (billDiscountAmount() > 0) {
+        <div class="summary-row">
+          <span>Discount</span>
+          <span>−₹{{ billDiscountAmount() | number: '1.2-2' }}</span>
+        </div>
+      }
+      @if (taxType() === 'IGST') {
+        <div class="summary-row">
+          <span>IGST</span>
+          <span>₹{{ igstAmount() | number: '1.2-2' }}</span>
+        </div>
+      } @else {
+        <div class="summary-row">
+          <span>CGST</span>
+          <span>₹{{ cgstAmount() | number: '1.2-2' }}</span>
+        </div>
+        <div class="summary-row">
+          <span>SGST</span>
+          <span>₹{{ sgstAmount() | number: '1.2-2' }}</span>
+        </div>
+      }
+      <div class="summary-row">
+        <span>Round Off</span>
+        <span>₹{{ roundOff() | number: '1.2-2' }}</span>
+      </div>
+      <div class="summary-row summary-grand">
+        <span>Grand Total</span>
+        <span>₹{{ grandTotal() | number: '1.2-2' }}</span>
+      </div>
+    </div>
+
+    <div class="payment-modes">
+      <button type="button" class="mode-btn" [class.active]="paymentMode === 'cash'" (click)="setPaymentMode('cash')">Cash</button>
+      <button type="button" class="mode-btn" [class.active]="paymentMode === 'upi'" (click)="setPaymentMode('upi')">UPI</button>
+      <button type="button" class="mode-btn" [class.active]="paymentMode === 'card'" (click)="setPaymentMode('card')">Card</button>
+    </div>
+    @if (!showMorePaymentModes()) {
+      <button type="button" class="inline-link-btn" (click)="showMorePaymentModes.set(true)">More payment options</button>
+    } @else {
+      <div class="field">
+        <label for="payment_mode_more">Credit / Other</label>
+        <select id="payment_mode_more" name="payment_mode_more" [(ngModel)]="paymentMode">
+          <option value="credit">Credit</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    }
+
+    @if (!editMode()) {
+      <div class="field cash-received-field">
+        <label>Cash Received</label>
+        <div class="amount-paid-row">
+          <input type="number" min="0" step="0.01" [(ngModel)]="amountPaidText" placeholder="Full amount" />
+          <button type="button" class="btn btn-secondary btn-sm" (click)="useFullAmount()">Full</button>
+        </div>
+      </div>
+      @if (paymentMode === 'cash' && changeDue() > 0) {
+        <div class="change-due">Change due: <strong>₹{{ changeDue() | number: '1.2-2' }}</strong></div>
+      }
+      @if (balanceDue() > 0) {
+        <div class="balance-due-note">
+          Balance due: <strong>₹{{ balanceDue() | number: '1.2-2' }}</strong>
+          <span>This bill will be saved as a credit sale — the customer will still owe this amount.</span>
+        </div>
+      }
+    } @else if (editOriginalInvoice(); as orig) {
+      <div class="balance-due-note edit-payment-note">
+        Already paid: <strong>₹{{ num(orig.amount_paid) | number: '1.2-2' }}</strong> · Balance due (before this edit): <strong>₹{{ num(orig.balance_due) | number: '1.2-2' }}</strong>
+        <span>Payments aren't changed here — record or adjust them from the invoice's own Record Payment card after saving.</span>
+      </div>
+    }
+
+    <button class="btn btn-primary checkout-btn" type="button" (click)="save()" [disabled]="saving()">
+      {{ editMode() ? (saving() ? 'Saving...' : 'Save Changes') : ('⚡ ' + (saving() ? 'Generating...' : 'Checkout & Print Bill')) }}
+    </button>
+  </div>
+</div>

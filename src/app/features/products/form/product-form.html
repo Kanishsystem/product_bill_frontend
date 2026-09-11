@@ -1,0 +1,270 @@
+<div class="page-header">
+  <div>
+    <h1>{{ productId ? 'Edit Product' : 'New Product' }}</h1>
+    <p class="page-subtitle">Fields below adjust automatically based on the category you pick.</p>
+  </div>
+  <a routerLink="/products" class="btn btn-secondary">Back to list</a>
+</div>
+
+@if (!loading()) {
+  <form class="card form-card" (ngSubmit)="save()">
+    <div class="grid-2">
+      <div class="field">
+        <label for="name">Product name</label>
+        <input id="name" name="name" type="text" [(ngModel)]="form.name" required />
+      </div>
+      <div class="field">
+        <label for="category_id">Category</label>
+        <div class="select-with-add">
+          <select id="category_id" name="category_id" [(ngModel)]="form.category_id" required>
+            <option [ngValue]="''" disabled>Select a category</option>
+            @for (cat of categories(); track cat.id) {
+              <option [ngValue]="cat.id">{{ cat.category_name }}</option>
+            }
+          </select>
+          <button type="button" class="btn-icon-add" title="Add new category" (click)="openCategoryModal()">
+            <app-icon name="plus" [size]="16"></app-icon>
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="brand_id">Brand</label>
+        <div class="select-with-add">
+          <select id="brand_id" name="brand_id" [(ngModel)]="form.brand_id">
+            <option [ngValue]="null">No brand</option>
+            @for (b of brands(); track b.id) {
+              <option [ngValue]="b.id">{{ b.brand_name }}</option>
+            }
+          </select>
+          <button type="button" class="btn-icon-add" title="Add new brand" (click)="openBrandModal()">
+            <app-icon name="plus" [size]="16"></app-icon>
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="unit_id">Unit</label>
+        <div class="select-with-add">
+          <select id="unit_id" name="unit_id" [(ngModel)]="form.unit_id">
+            <option [ngValue]="null" disabled>Select a unit</option>
+            @for (u of units(); track u.id) {
+              <option [ngValue]="u.id">{{ u.unit_name }}</option>
+            }
+          </select>
+          <button type="button" class="btn-icon-add" title="Add new unit" (click)="openUnitModal()">
+            <app-icon name="plus" [size]="16"></app-icon>
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="purchase_price">Purchase price (incl. GST)</label>
+        <input
+          id="purchase_price"
+          name="purchase_price"
+          type="number"
+          min="0"
+          step="0.01"
+          [(ngModel)]="form.purchase_price"
+          (ngModelChange)="recomputeSellingPrice()"
+        />
+        <p class="field-hint">Cost excl. GST: ₹{{ exGstBasePrice }}</p>
+      </div>
+      <div class="field">
+        <label for="tax_rate">GST %</label>
+        <input
+          id="tax_rate"
+          name="tax_rate"
+          type="number"
+          min="0"
+          step="0.01"
+          [(ngModel)]="form.tax_rate"
+          (ngModelChange)="recomputeSellingPrice()"
+          required
+        />
+      </div>
+      <div class="field">
+        <label for="profit_percent">Profit %</label>
+        <input
+          id="profit_percent"
+          name="profit_percent"
+          type="number"
+          step="0.01"
+          [(ngModel)]="form.profit_percent"
+          (ngModelChange)="recomputeSellingPrice()"
+          placeholder="Optional - auto-fills selling price"
+        />
+      </div>
+      <div class="field">
+        <label for="selling_price">Selling price (incl. GST)</label>
+        <input id="selling_price" name="selling_price" type="number" min="0" step="0.01" [(ngModel)]="form.selling_price" required />
+        <p class="field-hint">Auto-filled as purchase price × (1 + profit %) - you can still edit it directly.</p>
+      </div>
+      <div class="field">
+        <label for="hsn_sac_code">HSN/SAC code</label>
+        <input id="hsn_sac_code" name="hsn_sac_code" type="text" [(ngModel)]="form.hsn_sac_code" required />
+      </div>
+      <div class="field">
+        <label for="barcode">Barcode</label>
+        <input id="barcode" name="barcode" type="text" [(ngModel)]="form.barcode" placeholder="Scan or type - optional" />
+      </div>
+    </div>
+
+    <div class="field status-field">
+      <label for="status">Status</label>
+      <select id="status" name="status" [(ngModel)]="form.status">
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+
+    @if (selectedCategory) {
+      <div class="category-flags">
+        @if (selectedCategory!.is_imei_required) {
+          <span class="badge badge-success">IMEI required at purchase (IMEI1 mandatory, IMEI2 optional)</span>
+        }
+        @if (selectedCategory!.is_serial_required) {
+          <span class="badge badge-success">Serial number required at purchase</span>
+        }
+        @if (!selectedCategory!.is_imei_required && !selectedCategory!.is_serial_required) {
+          <span class="badge badge-neutral">Quantity-only - no IMEI/Serial tracking</span>
+        }
+      </div>
+
+      @if (selectedCategory!.attributes.length > 0) {
+        <h2>{{ selectedCategory!.category_name }} details</h2>
+        <div class="grid-2">
+          @for (attr of selectedCategory!.attributes; track attr.id) {
+            <div class="field">
+              <label>{{ attr.attribute_name }}{{ attr.is_required ? ' *' : '' }}</label>
+              @if (attr.attribute_type === 'select') {
+                <select [(ngModel)]="attributeValues[attr.attribute_name]" [name]="'attr_' + attr.id">
+                  <option value="">Select...</option>
+                  @for (opt of attr.options; track opt) {
+                    <option [value]="opt">{{ opt }}</option>
+                  }
+                </select>
+              } @else if (attr.attribute_type === 'number') {
+                <input type="number" [(ngModel)]="attributeValues[attr.attribute_name]" [name]="'attr_' + attr.id" />
+              } @else {
+                <input type="text" [(ngModel)]="attributeValues[attr.attribute_name]" [name]="'attr_' + attr.id" />
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+
+    <button class="btn btn-primary" type="submit" [disabled]="saving()">
+      {{ saving() ? 'Saving...' : productId ? 'Save changes' : 'Create product' }}
+    </button>
+  </form>
+}
+
+@if (showCategoryModal()) {
+  <div class="modal-overlay">
+    <div class="modal-card">
+      <form (ngSubmit)="submitCategoryModal()">
+        <div class="modal-header">
+          <h2 class="modal-title">Add Category</h2>
+          <button type="button" class="icon-link" title="Close" (click)="closeCategoryModal()">
+            <app-icon name="close" [size]="16"></app-icon>
+          </button>
+        </div>
+        <p class="modal-subtitle">Saved straight into this product - nothing else on this form is lost.</p>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="cm_name">Category name <span class="req">*</span></label>
+            <input id="cm_name" name="cm_name" type="text" [(ngModel)]="categoryModalForm.category_name" required autofocus />
+          </div>
+          <div class="field">
+            <label for="cm_sub">Sub-category (optional)</label>
+            <input id="cm_sub" name="cm_sub" type="text" [(ngModel)]="categoryModalForm.sub_category" placeholder="TV / AC / Mixer..." />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <label class="checkbox-field">
+            <input type="checkbox" name="cm_imei" [(ngModel)]="categoryModalForm.is_imei_required" />
+            <span>IMEI required</span>
+          </label>
+          <label class="checkbox-field">
+            <input type="checkbox" name="cm_serial" [(ngModel)]="categoryModalForm.is_serial_required" />
+            <span>Serial number required</span>
+          </label>
+        </div>
+
+        <div class="field">
+          <label for="cm_size">Size type (Home Appliance only)</label>
+          <select id="cm_size" name="cm_size" [(ngModel)]="categoryModalForm.size_type">
+            <option value="">Not applicable</option>
+            <option value="Big">Big</option>
+            <option value="Small">Small</option>
+          </select>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeCategoryModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="savingCategoryModal()">
+            {{ savingCategoryModal() ? 'Adding...' : 'Add Category' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (showBrandModal()) {
+  <div class="modal-overlay">
+    <div class="modal-card">
+      <form (ngSubmit)="submitBrandModal()">
+        <div class="modal-header">
+          <h2 class="modal-title">Add Brand</h2>
+          <button type="button" class="icon-link" title="Close" (click)="closeBrandModal()">
+            <app-icon name="close" [size]="16"></app-icon>
+          </button>
+        </div>
+        <p class="modal-subtitle">Saved straight into this product - nothing else on this form is lost.</p>
+
+        <div class="field">
+          <label for="bm_name">Brand name <span class="req">*</span></label>
+          <input id="bm_name" name="bm_name" type="text" [(ngModel)]="brandModalForm.brand_name" required autofocus />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeBrandModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="savingBrandModal()">
+            {{ savingBrandModal() ? 'Adding...' : 'Add Brand' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (showUnitModal()) {
+  <div class="modal-overlay">
+    <div class="modal-card">
+      <form (ngSubmit)="submitUnitModal()">
+        <div class="modal-header">
+          <h2 class="modal-title">Add Unit</h2>
+          <button type="button" class="icon-link" title="Close" (click)="closeUnitModal()">
+            <app-icon name="close" [size]="16"></app-icon>
+          </button>
+        </div>
+        <p class="modal-subtitle">Saved straight into this product - nothing else on this form is lost.</p>
+
+        <div class="field">
+          <label for="um_name">Unit name <span class="req">*</span></label>
+          <input id="um_name" name="um_name" type="text" [(ngModel)]="unitModalForm.unit_name" required autofocus />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeUnitModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="savingUnitModal()">
+            {{ savingUnitModal() ? 'Adding...' : 'Add Unit' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

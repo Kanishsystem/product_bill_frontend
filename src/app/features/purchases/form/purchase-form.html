@@ -1,0 +1,630 @@
+<div class="page-header">
+  <div>
+    <h1>{{ editMode() ? 'Edit Purchase' : 'New Purchase' }}</h1>
+    <p class="page-subtitle">
+      @if (editMode()) {
+        Fixing a mistake on this purchase? Change the items/supplier/date below and save - the purchase's identity stays the same. This is blocked if any of its stock has already been sold, returned, or marked damaged.
+      } @else {
+        Pick a product to see whether it needs IMEI, a Serial No., or just a quantity — stock is created automatically on save.
+      }
+    </p>
+  </div>
+  <a [routerLink]="editMode() ? ['/purchases', editPurchaseId] : ['/purchases']" class="btn btn-secondary">{{ editMode() ? 'Back to purchase' : 'Back to list' }}</a>
+</div>
+
+@if (loadingForEdit()) {
+  <p class="loading-text">Loading purchase...</p>
+}
+
+<form (ngSubmit)="save()">
+  <div class="card form-card">
+    <h2 class="card-title">Purchase Details</h2>
+
+    <div class="grid-2">
+      <div class="field combo-field">
+        <label for="supplier_search">Supplier <span class="req">*</span></label>
+        <div class="combo-with-add">
+          <div class="combo-input-wrap">
+            <input
+              id="supplier_search"
+              name="supplier_search"
+              type="text"
+              autocomplete="off"
+              placeholder="Select Supplier"
+              [(ngModel)]="supplierSearch"
+              (ngModelChange)="onSupplierSearchChange()"
+              (focus)="openSupplierDropdown()"
+              (blur)="onSupplierBlur()"
+              required
+            />
+            @if (supplierDropdownOpen()) {
+              <div class="combo-dropdown">
+                @if (filteredSuppliers().length === 0) {
+                  <p class="empty-hint">No suppliers match.</p>
+                } @else {
+                  @for (s of filteredSuppliers(); track s.id) {
+                    <button type="button" class="combo-row" (mousedown)="selectSupplier(s)">
+                      <span class="cell-strong">{{ s.name }}</span>
+                      @if (s.phone) {
+                        <span class="result-meta">{{ s.phone }}</span>
+                      }
+                    </button>
+                  }
+                }
+              </div>
+            }
+          </div>
+          <button type="button" class="btn-icon-add" title="Add new supplier" (click)="openSupplierModal()">
+            <app-icon name="plus" [size]="16"></app-icon>
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="purchase_date">Purchase Date <span class="req">*</span></label>
+        <input id="purchase_date" name="purchase_date" type="date" [(ngModel)]="form.purchase_date" required />
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="supplier_invoice_no">Invoice Number</label>
+        <input
+          id="supplier_invoice_no"
+          name="supplier_invoice_no"
+          type="text"
+          placeholder="e.g. INV-2024-001"
+          [(ngModel)]="form.supplier_invoice_no"
+          required
+        />
+      </div>
+      <div class="field">
+        <label for="payment_mode">Payment Mode</label>
+        <select id="payment_mode" name="payment_mode" [(ngModel)]="paymentMode">
+          <option value="cash">Cash</option>
+          <option value="upi">UPI</option>
+          <option value="card">Card</option>
+          <option value="credit">Credit</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+
+    @if (editOriginalPurchase(); as orig) {
+      <div class="grid-2">
+        <p class="balance-due-note">
+          Already paid: <strong>₹{{ num(orig.amount_paid) | number: '1.2-2' }}</strong> · Balance due (before this edit): <strong>₹{{ num(orig.balance_due) | number: '1.2-2' }}</strong>
+          <br />Payments aren't changed here — record or adjust them from this purchase's own Record Payment card after saving.
+        </p>
+      </div>
+    }
+  </div>
+
+  <div class="card items-card">
+    <div class="items-card-header">
+      <h2 class="card-title">Items <span class="badge-count">{{ lines().length }}</span></h2>
+    </div>
+
+    <div class="items-table-wrap">
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th class="col-product">Product <span class="th-hint">(search or add)</span></th>
+            <th class="col-variant">Variant</th>
+            <th class="col-qty">Qty</th>
+            <th class="col-unit">Unit</th>
+            <th class="col-money">Purchase (₹)</th>
+            <th class="col-money">Sales (incl. GST) (₹)</th>
+            <th class="col-gst">GST%</th>
+            <th class="col-money">GST Amt</th>
+            <th class="col-money">Total</th>
+            <th class="col-action"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of lines(); track $index; let i = $index) {
+            <tr>
+              <td class="col-product">
+                <div class="combo-field combo-with-add">
+                  <div class="combo-input-wrap">
+                    <input
+                      type="text"
+                      autocomplete="off"
+                      placeholder="Search product..."
+                      [(ngModel)]="line.productSearch"
+                      [name]="'product_search_' + i"
+                      (ngModelChange)="onProductSearchChange(line, i)"
+                      (focus)="openProductDropdown(i)"
+                      (blur)="onProductBlur()"
+                      required
+                    />
+                    @if (isProductDropdownOpen(i)) {
+                      <div class="combo-dropdown">
+                        @if (filteredProducts(line).length === 0) {
+                          <p class="empty-hint">No products match.</p>
+                        } @else {
+                          @for (p of filteredProducts(line); track p.id) {
+                            <button type="button" class="combo-row" (mousedown)="selectProductForLine(line, p)">
+                              <span class="cell-strong">{{ p.name }}</span>
+                              <span class="result-meta">{{ p.category_name }} · ₹{{ p.selling_price }}</span>
+                            </button>
+                          }
+                        }
+                      </div>
+                    }
+                  </div>
+                  <button type="button" class="btn-icon-add" title="Add new product" (click)="openProductModal(i)">
+                    <app-icon name="plus" [size]="16"></app-icon>
+                  </button>
+                </div>
+              </td>
+              <td class="col-variant">
+                <span class="variant-value">{{ line.product?.brand_name || '—' }}</span>
+              </td>
+              <td class="col-qty">
+                @if (line.product && (line.product.is_imei_required || line.product.is_serial_required)) {
+                  <input type="number" class="cell-input" [value]="lineQuantity(line)" disabled />
+                } @else {
+                  <input
+                    type="number"
+                    class="cell-input"
+                    min="1"
+                    step="1"
+                    [(ngModel)]="line.quantity"
+                    [name]="'quantity_' + i"
+                    required
+                  />
+                }
+              </td>
+              <td class="col-unit">
+                <input type="text" class="cell-input" [(ngModel)]="line.unit" [name]="'unit_' + i" />
+              </td>
+              <td class="col-money">
+                <input
+                  type="number"
+                  class="cell-input"
+                  min="0"
+                  step="0.01"
+                  [(ngModel)]="line.rate"
+                  [name]="'rate_' + i"
+                  required
+                />
+              </td>
+              <td class="col-money">
+                <input
+                  type="number"
+                  class="cell-input"
+                  [value]="line.product?.selling_price ?? 0"
+                  disabled
+                  title="From the product master - edit there to change it"
+                />
+              </td>
+              <td class="col-gst">
+                <input
+                  type="number"
+                  class="cell-input"
+                  min="0"
+                  step="0.01"
+                  [(ngModel)]="line.gstRate"
+                  [name]="'gst_' + i"
+                />
+              </td>
+              <td class="col-money">
+                <span class="computed-value">₹{{ lineGstAmount(line) | number: '1.2-2' }}</span>
+              </td>
+              <td class="col-money">
+                <span class="computed-value computed-strong">₹{{ lineEstimatedTotal(line) | number: '1.2-2' }}</span>
+              </td>
+              <td class="col-action">
+                <button
+                  type="button"
+                  class="icon-link danger"
+                  title="Remove line"
+                  [disabled]="lines().length === 1"
+                  (click)="removeLine(i)"
+                >
+                  <app-icon name="trash" [size]="16"></app-icon>
+                </button>
+              </td>
+            </tr>
+            @if (line.product?.is_imei_required) {
+              <tr class="expand-row">
+                <td colspan="10">
+                  <div class="unit-editor">
+                    <div class="unit-editor-header">
+                      <span>IMEI units ({{ line.units.length }})</span>
+                      <button type="button" class="btn btn-secondary btn-sm" (click)="addUnit(line)">
+                        <app-icon name="plus" [size]="14"></app-icon>
+                        Add unit
+                      </button>
+                    </div>
+                    @for (unit of line.units; track $index; let ui = $index) {
+                      <div class="unit-row">
+                        <input type="text" placeholder="IMEI 1 (required)" [(ngModel)]="unit.imei1" [name]="'imei1_' + i + '_' + ui" required />
+                        <input type="text" placeholder="IMEI 2 (optional)" [(ngModel)]="unit.imei2" [name]="'imei2_' + i + '_' + ui" />
+                        @if (line.units.length > 1) {
+                          <button type="button" class="icon-link danger" title="Remove unit" (click)="removeUnit(line, ui)">
+                            <app-icon name="trash" [size]="14"></app-icon>
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @else if (line.product?.is_serial_required) {
+              <tr class="expand-row">
+                <td colspan="10">
+                  <div class="unit-editor">
+                    <div class="unit-editor-header">
+                      <span>Serial numbers ({{ line.serials.length }})</span>
+                      <button type="button" class="btn btn-secondary btn-sm" (click)="addSerial(line)">
+                        <app-icon name="plus" [size]="14"></app-icon>
+                        Add unit
+                      </button>
+                    </div>
+                    @for (serial of line.serials; track $index; let si = $index) {
+                      <div class="unit-row">
+                        <input
+                          type="text"
+                          placeholder="Serial No."
+                          [ngModel]="serial"
+                          (ngModelChange)="line.serials[si] = $event"
+                          [name]="'serial_' + i + '_' + si"
+                          required
+                        />
+                        @if (line.serials.length > 1) {
+                          <button type="button" class="icon-link danger" title="Remove" (click)="removeSerial(line, si)">
+                            <app-icon name="trash" [size]="14"></app-icon>
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <button type="button" class="add-row-btn" (click)="addLine()">
+      <app-icon name="plus" [size]="16"></app-icon>
+      Add Row
+    </button>
+
+    <div class="items-footer">
+      <div class="footer-row">
+        <span class="footer-label">Subtotal (excl. GST)</span>
+        <span class="footer-subtotal">₹{{ subtotalExclGst() | number: '1.2-2' }}</span>
+        <strong class="footer-grand-total">₹{{ grandEstimatedTotal() | number: '1.2-2' }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="card save-bar">
+    @if (!editMode()) {
+      <div class="field cash-received-field save-bar-amount-field">
+        <label for="amount_paid">Amount Paid <span class="req">*</span></label>
+        <div class="amount-paid-row">
+          <input
+            id="amount_paid"
+            name="amount_paid"
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="amountPaidText"
+            placeholder="0.00"
+            required
+          />
+          <button type="button" class="btn btn-secondary btn-sm" (click)="useFullAmount()">Full</button>
+        </div>
+        @if (balanceDueEstimate() > 0) {
+          <p class="balance-due-note">
+            Balance due to supplier: <strong>₹{{ balanceDueEstimate() | number: '1.2-2' }}</strong>
+          </p>
+        }
+      </div>
+    }
+    <div class="save-bar-totals-row">
+      <div class="grand-total">Est. grand total: <strong>₹{{ grandEstimatedTotal() | number: '1.2-2' }}</strong></div>
+      <button class="btn btn-primary" type="submit" [disabled]="saving()">
+        {{ saving() ? 'Saving...' : (editMode() ? 'Save Changes' : 'Record Purchase') }}
+      </button>
+    </div>
+  </div>
+</form>
+
+@if (showSupplierModal()) {
+  <div class="modal-overlay">
+    <div class="modal-card">
+      <form (ngSubmit)="submitSupplierModal()">
+        <div class="modal-header">
+          <h2 class="modal-title">Add Supplier</h2>
+          <button type="button" class="icon-link" title="Close" (click)="closeSupplierModal()">
+            <app-icon name="close" [size]="16"></app-icon>
+          </button>
+        </div>
+        <p class="modal-subtitle">Saved straight into this purchase - nothing else on this screen is lost.</p>
+
+        <div class="field">
+          <label for="sm_name">Name <span class="req">*</span></label>
+          <input id="sm_name" name="sm_name" type="text" [(ngModel)]="supplierModalForm.name" required autofocus />
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="sm_phone">Phone</label>
+            <input id="sm_phone" name="sm_phone" type="text" [(ngModel)]="supplierModalForm.phone" />
+          </div>
+          <div class="field">
+            <label for="sm_gstin">GSTIN (optional)</label>
+            <input id="sm_gstin" name="sm_gstin" type="text" [(ngModel)]="supplierModalForm.gstin" placeholder="33ABCDE1234F1Z5" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="sm_address">Address</label>
+          <textarea id="sm_address" name="sm_address" rows="2" [(ngModel)]="supplierModalForm.address"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeSupplierModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="savingSupplierModal()">
+            {{ savingSupplierModal() ? 'Adding...' : 'Add Supplier' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (showProductModal()) {
+  <div class="modal-overlay">
+    <div class="modal-card">
+      <form (ngSubmit)="submitProductModal()">
+        <div class="modal-header">
+          <h2 class="modal-title">Add Product</h2>
+          <button type="button" class="icon-link" title="Close" (click)="closeProductModal()">
+            <app-icon name="close" [size]="16"></app-icon>
+          </button>
+        </div>
+        <p class="modal-subtitle">Saved straight into this purchase - nothing else on this screen is lost.</p>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="pm_name">Product Name <span class="req">*</span></label>
+            <input id="pm_name" name="pm_name" type="text" [(ngModel)]="productModalForm.name" required autofocus />
+          </div>
+          <div class="field">
+            <label for="pm_category">Category <span class="req">*</span></label>
+            <div class="select-with-add">
+              <select id="pm_category" name="pm_category" [(ngModel)]="productModalForm.category_id" required>
+                <option value="" disabled>Select category</option>
+                @for (c of categories(); track c.id) {
+                  <option [value]="c.id">{{ c.category_name }}</option>
+                }
+              </select>
+              <button type="button" class="btn-icon-add" title="Add new category" (click)="openCategoryModal()">
+                <app-icon name="plus" [size]="16"></app-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="pm_brand">Brand</label>
+            <div class="select-with-add">
+              <select id="pm_brand" name="pm_brand" [(ngModel)]="productModalForm.brand_id">
+                <option [ngValue]="null">No brand</option>
+                @for (b of brands(); track b.id) {
+                  <option [ngValue]="b.id">{{ b.brand_name }}</option>
+                }
+              </select>
+              <button type="button" class="btn-icon-add" title="Add new brand" (click)="openBrandModal()">
+                <app-icon name="plus" [size]="16"></app-icon>
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="pm_hsn">HSN/SAC Code <span class="req">*</span></label>
+            <input id="pm_hsn" name="pm_hsn" type="text" [(ngModel)]="productModalForm.hsn_sac_code" required />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="pm_base_price">Purchase Price (incl. GST) (₹)</label>
+            <input
+              id="pm_base_price"
+              name="pm_base_price"
+              type="number"
+              min="0"
+              step="0.01"
+              [(ngModel)]="productModalForm.purchase_price"
+              (ngModelChange)="recomputeModalSellingPrice()"
+            />
+            <p class="field-hint">Cost excl. GST: ₹{{ productModalExGstBasePrice }}</p>
+          </div>
+          <div class="field">
+            <label for="pm_gst">GST % <span class="req">*</span></label>
+            <input
+              id="pm_gst"
+              name="pm_gst"
+              type="number"
+              min="0"
+              step="0.01"
+              [(ngModel)]="productModalForm.tax_rate"
+              (ngModelChange)="recomputeModalSellingPrice()"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="pm_profit">Profit %</label>
+            <input
+              id="pm_profit"
+              name="pm_profit"
+              type="number"
+              step="0.01"
+              [(ngModel)]="productModalForm.profit_percent"
+              (ngModelChange)="recomputeModalSellingPrice()"
+              placeholder="Optional - auto-fills selling price"
+            />
+          </div>
+          <div class="field">
+            <label for="pm_selling_price">Selling Price (incl. GST) (₹) <span class="req">*</span></label>
+            <input
+              id="pm_selling_price"
+              name="pm_selling_price"
+              type="number"
+              min="0"
+              step="0.01"
+              [(ngModel)]="productModalForm.selling_price"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="pm_unit">Unit</label>
+            <div class="select-with-add">
+              <select id="pm_unit" name="pm_unit" [(ngModel)]="productModalForm.unit_id">
+                <option [ngValue]="null" disabled>Select a unit</option>
+                @for (u of units(); track u.id) {
+                  <option [ngValue]="u.id">{{ u.unit_name }}</option>
+                }
+              </select>
+              <button type="button" class="btn-icon-add" title="Add new unit" (click)="openUnitModal()">
+                <app-icon name="plus" [size]="16"></app-icon>
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="pm_barcode">Barcode (optional)</label>
+            <input id="pm_barcode" name="pm_barcode" type="text" [(ngModel)]="productModalForm.barcode" />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeProductModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="savingProductModal()">
+            {{ savingProductModal() ? 'Adding...' : 'Add Product' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (showCategoryModal()) {
+  <div class="modal-overlay">
+    <div class="modal-card">
+      <form (ngSubmit)="submitCategoryModal()">
+        <div class="modal-header">
+          <h2 class="modal-title">Add Category</h2>
+          <button type="button" class="icon-link" title="Close" (click)="closeCategoryModal()">
+            <app-icon name="close" [size]="16"></app-icon>
+          </button>
+        </div>
+        <p class="modal-subtitle">Saved straight into this purchase - nothing else on this screen is lost.</p>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="cm_name">Category name <span class="req">*</span></label>
+            <input id="cm_name" name="cm_name" type="text" [(ngModel)]="categoryModalForm.category_name" required autofocus />
+          </div>
+          <div class="field">
+            <label for="cm_sub">Sub-category (optional)</label>
+            <input id="cm_sub" name="cm_sub" type="text" [(ngModel)]="categoryModalForm.sub_category" placeholder="TV / AC / Mixer..." />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <label class="checkbox-field">
+            <input type="checkbox" name="cm_imei" [(ngModel)]="categoryModalForm.is_imei_required" />
+            <span>IMEI required</span>
+          </label>
+          <label class="checkbox-field">
+            <input type="checkbox" name="cm_serial" [(ngModel)]="categoryModalForm.is_serial_required" />
+            <span>Serial number required</span>
+          </label>
+        </div>
+
+        <div class="field">
+          <label for="cm_size">Size type (Home Appliance only)</label>
+          <select id="cm_size" name="cm_size" [(ngModel)]="categoryModalForm.size_type">
+            <option value="">Not applicable</option>
+            <option value="Big">Big</option>
+            <option value="Small">Small</option>
+          </select>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeCategoryModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="savingCategoryModal()">
+            {{ savingCategoryModal() ? 'Adding...' : 'Add Category' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (showBrandModal()) {
+  <div class="modal-overlay">
+    <div class="modal-card">
+      <form (ngSubmit)="submitBrandModal()">
+        <div class="modal-header">
+          <h2 class="modal-title">Add Brand</h2>
+          <button type="button" class="icon-link" title="Close" (click)="closeBrandModal()">
+            <app-icon name="close" [size]="16"></app-icon>
+          </button>
+        </div>
+        <p class="modal-subtitle">Saved straight into this purchase - nothing else on this screen is lost.</p>
+
+        <div class="field">
+          <label for="bm_name">Brand name <span class="req">*</span></label>
+          <input id="bm_name" name="bm_name" type="text" [(ngModel)]="brandModalForm.brand_name" required autofocus />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeBrandModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="savingBrandModal()">
+            {{ savingBrandModal() ? 'Adding...' : 'Add Brand' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (showUnitModal()) {
+  <div class="modal-overlay">
+    <div class="modal-card">
+      <form (ngSubmit)="submitUnitModal()">
+        <div class="modal-header">
+          <h2 class="modal-title">Add Unit</h2>
+          <button type="button" class="icon-link" title="Close" (click)="closeUnitModal()">
+            <app-icon name="close" [size]="16"></app-icon>
+          </button>
+        </div>
+        <p class="modal-subtitle">Saved straight into this purchase - nothing else on this screen is lost.</p>
+
+        <div class="field">
+          <label for="um_name">Unit name <span class="req">*</span></label>
+          <input id="um_name" name="um_name" type="text" [(ngModel)]="unitModalForm.unit_name" required autofocus />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeUnitModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="savingUnitModal()">
+            {{ savingUnitModal() ? 'Adding...' : 'Add Unit' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

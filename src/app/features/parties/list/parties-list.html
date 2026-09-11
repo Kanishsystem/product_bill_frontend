@@ -1,0 +1,73 @@
+<div class="page-header">
+  <div>
+    <h1>Suppliers &amp; Customers</h1>
+    <p class="page-subtitle">GSTIN determines the state code used for CGST/SGST vs IGST.</p>
+  </div>
+  <a [routerLink]="['/parties/new']" [queryParams]="{ type: activeTab }" class="btn btn-primary">
+    <app-icon name="plus" [size]="16"></app-icon>
+    New {{ activeTab === 'supplier' ? 'Supplier' : 'Customer' }}
+  </a>
+</div>
+
+<div class="tabs">
+  <button type="button" [class.active]="activeTab === 'customer'" (click)="setTab('customer')">Customers</button>
+  <button type="button" [class.active]="activeTab === 'supplier'" (click)="setTab('supplier')">Suppliers</button>
+</div>
+
+<div class="card filter-bar">
+  <div class="field search-field">
+    <label>Search</label>
+    <input type="text" [(ngModel)]="search" (ngModelChange)="load()" placeholder="Name, phone or GSTIN..." />
+  </div>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <p class="loading-text">Loading...</p>
+  } @else if (parties().length === 0) {
+    <app-empty-state
+      icon="parties"
+      title="No {{ activeTab === 'supplier' ? 'suppliers' : 'customers' }} yet"
+    ></app-empty-state>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>GSTIN</th>
+            <th>State</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (party of parties(); track party.id) {
+            <tr>
+              <td data-label="Name" class="cell-strong">{{ party.name }}</td>
+              <td data-label="Phone">{{ party.phone || '—' }}</td>
+              <td data-label="GSTIN">{{ party.gstin || '—' }}</td>
+              <td data-label="State">
+                {{ party.state || '—' }}
+                @if (party.state_code) {
+                  <span class="badge badge-neutral">{{ party.state_code }}</span>
+                }
+              </td>
+              <td class="cell-actions">
+                <a [routerLink]="['/parties', party.id]" class="icon-link" title="View history">
+                  <app-icon name="eye" [size]="16"></app-icon>
+                </a>
+                <a [routerLink]="['/parties', party.id, 'edit']" class="icon-link" title="Edit">
+                  <app-icon name="edit" [size]="16"></app-icon>
+                </a>
+                <button type="button" class="icon-link danger" title="Delete" (click)="remove(party)">
+                  <app-icon name="trash" [size]="16"></app-icon>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

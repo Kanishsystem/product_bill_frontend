@@ -1,0 +1,289 @@
+<div class="page-header">
+  <div>
+    <h1>Reports</h1>
+    <p class="page-subtitle">Sales, purchases, stock valuation, profit and GST — everything needed for filing and review.</p>
+  </div>
+</div>
+
+<div class="tabs">
+  <button type="button" [class.active]="activeTab === 'sales'" (click)="setTab('sales')">Sales</button>
+  <button type="button" [class.active]="activeTab === 'purchases'" (click)="setTab('purchases')">Purchases</button>
+  <button type="button" [class.active]="activeTab === 'stock-valuation'" (click)="setTab('stock-valuation')">Stock Valuation</button>
+  <button type="button" [class.active]="activeTab === 'profit'" (click)="setTab('profit')">Profit</button>
+  <button type="button" [class.active]="activeTab === 'gst'" (click)="setTab('gst')">GST</button>
+</div>
+
+@if (activeTab !== 'stock-valuation') {
+  <div class="card filter-bar">
+    <div class="field">
+      <label>From</label>
+      <input type="date" [(ngModel)]="fromDate" (ngModelChange)="load()" />
+    </div>
+    <div class="field">
+      <label>To</label>
+      <input type="date" [(ngModel)]="toDate" (ngModelChange)="load()" />
+    </div>
+    @if (activeTab === 'sales') {
+      <div class="field">
+        <label>Group by</label>
+        <select [(ngModel)]="salesGroupBy" (ngModelChange)="load()">
+          <option value="day">Day</option>
+          <option value="month">Month</option>
+          <option value="category">Category</option>
+        </select>
+      </div>
+    }
+  </div>
+}
+
+@if (loading()) {
+  <p class="loading-text">Loading...</p>
+}
+
+@if (!loading() && activeTab === 'sales' && salesReport(); as r) {
+  <div class="summary-cards">
+    <div class="card summary-card">
+      <span class="summary-label">Invoices</span>
+      <span class="summary-value">{{ r.summary.invoice_count }}</span>
+    </div>
+    <div class="card summary-card">
+      <span class="summary-label">Taxable</span>
+      <span class="summary-value">₹{{ r.summary.taxable }}</span>
+    </div>
+    <div class="card summary-card">
+      <span class="summary-label">GST</span>
+      <span class="summary-value">₹{{ r.summary.gst }}</span>
+    </div>
+    <div class="card summary-card total">
+      <span class="summary-label">Total</span>
+      <span class="summary-value">₹{{ r.summary.total }}</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ r.group_by === 'category' ? 'Category' : r.group_by === 'month' ? 'Month' : 'Date' }}</th>
+            @if (r.group_by !== 'category') {
+              <th>Invoices</th>
+            }
+            @if (r.group_by === 'category') {
+              <th>Qty</th>
+            }
+            <th>Taxable</th>
+            <th>GST</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of r.rows; track row.period) {
+            <tr>
+              <td data-label="Period" class="cell-strong">{{ row.period }}</td>
+              @if (r.group_by !== 'category') {
+                <td data-label="Invoices">{{ row.invoice_count }}</td>
+              }
+              @if (r.group_by === 'category') {
+                <td data-label="Qty">{{ row.qty }}</td>
+              }
+              <td data-label="Taxable">₹{{ row.taxable }}</td>
+              <td data-label="GST">₹{{ row.gst }}</td>
+              <td data-label="Total">₹{{ row.total }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="table-title">All invoices in this period</h2>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Invoice No</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Taxable</th>
+            <th>GST</th>
+            <th>Total</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (inv of r.invoices; track inv.id) {
+            <tr [class.row-cancelled]="inv.status === 'cancelled'">
+              <td data-label="Invoice No" class="cell-strong">{{ inv.invoice_no }}</td>
+              <td data-label="Date">{{ inv.invoice_date }}</td>
+              <td data-label="Customer">{{ inv.customer_name }}</td>
+              <td data-label="Taxable">₹{{ inv.taxable_amount }}</td>
+              <td data-label="GST">₹{{ inv.gst }}</td>
+              <td data-label="Total">₹{{ inv.total_amount }}</td>
+              <td data-label="Status">
+                <span class="status-badge" [class]="'status-' + inv.status">{{ inv.status }}</span>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="empty-cell">No invoices in this period.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="table-note">Cancelled invoices are listed here but excluded from the totals and summary above.</p>
+  </div>
+}
+
+@if (!loading() && activeTab === 'purchases' && purchaseReport(); as r) {
+  <div class="summary-cards">
+    <div class="card summary-card">
+      <span class="summary-label">Purchases</span>
+      <span class="summary-value">{{ r.summary.purchase_count }}</span>
+    </div>
+    <div class="card summary-card">
+      <span class="summary-label">Taxable</span>
+      <span class="summary-value">₹{{ r.summary.taxable }}</span>
+    </div>
+    <div class="card summary-card">
+      <span class="summary-label">GST</span>
+      <span class="summary-value">₹{{ r.summary.gst }}</span>
+    </div>
+    <div class="card summary-card total">
+      <span class="summary-label">Total</span>
+      <span class="summary-value">₹{{ r.summary.total }}</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Supplier</th>
+            <th>Invoice No</th>
+            <th>Tax</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of r.rows; track row.id) {
+            <tr>
+              <td data-label="Date">{{ row.purchase_date }}</td>
+              <td data-label="Supplier" class="cell-strong">{{ row.supplier_name }}</td>
+              <td data-label="Invoice No">{{ row.supplier_invoice_no }}</td>
+              <td data-label="Tax">{{ row.tax_type === 'IGST' ? 'IGST' : 'CGST+SGST' }}</td>
+              <td data-label="Total">₹{{ row.total_amount }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+@if (!loading() && activeTab === 'stock-valuation' && stockValuation(); as r) {
+  <div class="summary-cards">
+    <div class="card summary-card total">
+      <span class="summary-label">Total Stock Value</span>
+      <span class="summary-value">₹{{ r.total_value }}</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th>On Hand</th>
+            <th>Stock Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of r.rows; track row.product_id) {
+            <tr>
+              <td data-label="Product" class="cell-strong">{{ row.product_name }}</td>
+              <td data-label="Category">{{ row.category_name }}</td>
+              <td data-label="On Hand">{{ row.on_hand }}</td>
+              <td data-label="Stock Value">₹{{ row.stock_value }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+@if (!loading() && activeTab === 'profit' && profitReport(); as r) {
+  <div class="summary-cards">
+    <div class="card summary-card">
+      <span class="summary-label">Revenue</span>
+      <span class="summary-value">₹{{ r.summary.revenue | number: '1.2-2' }}</span>
+    </div>
+    <div class="card summary-card">
+      <span class="summary-label">Cost</span>
+      <span class="summary-value">₹{{ r.summary.cost | number: '1.2-2' }}</span>
+    </div>
+    <div class="card summary-card total">
+      <span class="summary-label">Profit</span>
+      <span class="summary-value">₹{{ r.summary.profit | number: '1.2-2' }}</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Qty Sold</th>
+            <th>Revenue</th>
+            <th>Cost</th>
+            <th>Profit</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of r.rows; track row.product_id) {
+            <tr>
+              <td data-label="Product" class="cell-strong">{{ row.product_name }}</td>
+              <td data-label="Qty Sold">{{ row.qty_sold }}</td>
+              <td data-label="Revenue">₹{{ row.revenue }}</td>
+              <td data-label="Cost">₹{{ row.cost }}</td>
+              <td data-label="Profit">₹{{ row.profit }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+@if (!loading() && activeTab === 'gst' && gstReport(); as r) {
+  <div class="card gst-card">
+    <h2>Sales GST</h2>
+    <div class="gst-grid">
+      <div><span class="summary-label">Taxable</span> ₹{{ r.output.taxable }}</div>
+      <div><span class="summary-label">CGST</span> ₹{{ r.output.cgst }}</div>
+      <div><span class="summary-label">SGST</span> ₹{{ r.output.sgst }}</div>
+      <div><span class="summary-label">IGST</span> ₹{{ r.output.igst }}</div>
+      <div class="gst-total"><span class="summary-label">Total</span> ₹{{ r.output.total_gst }}</div>
+    </div>
+  </div>
+  <div class="card gst-card">
+    <h2>Purchases GST</h2>
+    <div class="gst-grid">
+      <div><span class="summary-label">Taxable</span> ₹{{ r.input.taxable }}</div>
+      <div><span class="summary-label">CGST</span> ₹{{ r.input.cgst }}</div>
+      <div><span class="summary-label">SGST</span> ₹{{ r.input.sgst }}</div>
+      <div><span class="summary-label">IGST</span> ₹{{ r.input.igst }}</div>
+      <div class="gst-total"><span class="summary-label">Total</span> ₹{{ r.input.total_gst }}</div>
+    </div>
+  </div>
+  <div class="summary-cards">
+    <div class="card summary-card" [class.total]="r.net_payable >= 0">
+      <span class="summary-label">Net GST {{ r.net_payable >= 0 ? 'Payable' : 'Credit Carried Forward' }}</span>
+      <span class="summary-value">₹{{ (r.net_payable < 0 ? -r.net_payable : r.net_payable) | number: '1.2-2' }}</span>
+    </div>
+  </div>
+}

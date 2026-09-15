@@ -1,5 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PurchaseService } from '../../../core/services/purchase.service';
@@ -11,7 +11,7 @@ import { Icon } from '../../../shared/components/icon/icon';
 @Component({
   selector: 'app-purchase-detail',
   standalone: true,
-  imports: [RouterLink, Icon, DecimalPipe, FormsModule],
+  imports: [RouterLink, Icon, DecimalPipe, DatePipe, FormsModule],
   templateUrl: './purchase-detail.html',
   styleUrl: './purchase-detail.scss',
 })

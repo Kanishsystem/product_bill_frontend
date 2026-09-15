@@ -47,16 +47,40 @@ export interface SalesReportInvoiceRow {
   invoice_no: string;
   invoice_date: string;
   customer_name: string;
+  /** Empty string (never null) when the customer party has no phone on file
+   * - see ReportService::salesReport()'s COALESCE. */
+  customer_phone: string;
   taxable_amount: number | string;
   gst: number | string;
   total_amount: number | string;
   status: 'completed' | 'partially_returned' | 'returned' | 'cancelled';
+  /** Lets this same "all invoices" table also answer "which invoice number is
+   * EMI/Cash/etc." - see PaymentModeReportRow for the aggregated totals. */
+  payment_mode: string;
+  /** Only ever non-null when payment_mode is 'emi' - see
+   * SalesInvoice.emi_amount's doc comment. */
+  emi_amount: number | string | null;
+}
+
+/** One row per distinct payment_mode within the report's date range - this is
+ * where "how much came in as cash" and "how much is sitting in EMI amounts"
+ * are answered. `collected` is amount_paid actually received for that mode;
+ * `emi_amount` is only ever non-zero for the 'emi' row (the column itself is
+ * null for every other mode - see SalesInvoice.emi_amount's doc comment). */
+export interface PaymentModeReportRow {
+  payment_mode: string;
+  invoice_count: number;
+  total: number | string;
+  collected: number | string;
+  balance_due: number | string;
+  emi_amount: number | string;
 }
 
 export interface SalesReport {
   rows: ReportRow[];
   summary: ReportSummary;
   invoices: SalesReportInvoiceRow[];
+  payment_modes: PaymentModeReportRow[];
   group_by: SalesReportGroupBy;
   from_date: string;
   to_date: string;

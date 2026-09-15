@@ -129,34 +129,6 @@
   </div>
 }
 
-@if (pickerProduct(); as pp) {
-  <div class="card form-card picker-card">
-    <div class="picker-header">
-      <span>Available units — {{ pp.name }}</span>
-      <button type="button" class="icon-link" (click)="closePicker()">
-        <app-icon name="close" [size]="16"></app-icon>
-      </button>
-    </div>
-    @if (pickerLoading()) {
-      <p class="loading-text">Loading...</p>
-    } @else if (pickerUnits().length === 0) {
-      <p class="loading-text">No in-stock units for this product.</p>
-    } @else {
-      <div class="unit-picker-list">
-        @for (u of pickerUnits(); track u.id) {
-          <button type="button" class="unit-picker-row" (click)="pickUnit(u)">
-            <span>{{ u.imei1 || u.serial_no }}</span>
-            @if (u.imei2) {
-              <span class="result-meta">/ {{ u.imei2 }}</span>
-            }
-            <span class="result-meta">₹{{ u.selling_price }}</span>
-          </button>
-        }
-      </div>
-    }
-  </div>
-}
-
 <div class="billing-layout">
   <div class="card items-card">
     <div class="items-table-wrap">
@@ -179,24 +151,23 @@
               <td class="col-index">{{ i + 1 }}</td>
               <td class="col-product">
                 <span class="cell-strong">{{ line.productName }}</span>
-                <span class="result-meta">
-                  {{ line.categoryName }}
-                  @if (line.imei1) {
-                    · IMEI {{ line.imei1 }}
-                  } @else if (line.serialNo) {
-                    · Serial {{ line.serialNo }}
-                  }
-                </span>
+                <span class="result-meta">{{ line.categoryName }}</span>
+                @if (line.imeiRequired) {
+                  <div class="inline-serial-row">
+                    <input type="text" class="cell-input-sm" [(ngModel)]="line.imei1" [name]="'imei1_' + line.key" placeholder="IMEI 1 (optional)" />
+                    <input type="text" class="cell-input-sm" [(ngModel)]="line.imei2" [name]="'imei2_' + line.key" placeholder="IMEI 2 (optional)" />
+                  </div>
+                } @else if (line.serialRequired) {
+                  <div class="inline-serial-row">
+                    <input type="text" class="cell-input-sm" [(ngModel)]="line.serialNo" [name]="'serial_' + line.key" placeholder="Serial No. (optional)" />
+                  </div>
+                }
               </td>
               <td class="col-variant">
                 <span class="variant-value">{{ line.brand || '—' }}</span>
               </td>
               <td class="col-qty">
-                @if (line.isSerialized) {
-                  <input type="number" class="cell-input" [value]="1" disabled />
-                } @else {
-                  <input type="number" class="cell-input" min="1" step="1" [(ngModel)]="line.quantity" [name]="'qty_' + line.key" />
-                }
+                <input type="number" class="cell-input" min="1" step="1" [(ngModel)]="line.quantity" [name]="'qty_' + line.key" />
               </td>
               <td class="col-money">
                 <input
@@ -216,40 +187,11 @@
                 <span class="computed-value computed-strong">₹{{ lineTotal(line) | number: '1.2-2' }}</span>
               </td>
               <td class="col-action">
-                <button
-                  type="button"
-                  class="icon-link"
-                  title="Discount / warranty"
-                  [class.active]="isLineDetailsOpen(line.key)"
-                  (click)="toggleLineDetails(line.key)"
-                >
-                  <app-icon name="chevronDown" [size]="14"></app-icon>
-                </button>
                 <button type="button" class="icon-link danger" title="Remove" (click)="removeLine(line.key)">
                   <app-icon name="trash" [size]="14"></app-icon>
                 </button>
               </td>
             </tr>
-            @if (isLineDetailsOpen(line.key)) {
-              <tr class="expand-row">
-                <td colspan="8">
-                  <div class="line-details">
-                    <label>
-                      Line Disc %
-                      <input type="number" min="0" max="100" step="0.01" [(ngModel)]="line.discountPercent" [name]="'disc_' + line.key" />
-                    </label>
-                    <label>
-                      Warranty (yrs)
-                      <input type="number" min="0" step="1" [(ngModel)]="line.warrantyYears" [name]="'wy_' + line.key" />
-                    </label>
-                    <label>
-                      Warranty (mo)
-                      <input type="number" min="0" max="11" step="1" [(ngModel)]="line.warrantyMonths" [name]="'wm_' + line.key" />
-                    </label>
-                  </div>
-                </td>
-              </tr>
-            }
           }
           @if (cartFull()) {
             <tr>
@@ -294,7 +236,7 @@
                                   <span class="badge badge-danger">Out of stock</span>
                                 }
                                 @if (p.is_imei_required || p.is_serial_required) {
-                                  <span class="badge badge-neutral">Pick unit</span>
+                                  <span class="badge badge-neutral">IMEI/Serial optional</span>
                                 }
                               </span>
                             </button>
@@ -351,6 +293,17 @@
       </label>
     </div>
 
+    <div class="summary-discount-row">
+      <label>
+        Warranty (yrs)
+        <input type="number" min="0" step="1" [(ngModel)]="billWarrantyYears" name="bill_warranty_years" />
+      </label>
+      <label>
+        Warranty (mo)
+        <input type="number" min="0" max="11" step="1" [(ngModel)]="billWarrantyMonths" name="bill_warranty_months" />
+      </label>
+    </div>
+
     <div class="summary-totals">
       <div class="summary-row">
         <span>Subtotal</span>
@@ -389,39 +342,50 @@
 
     <div class="payment-modes">
       <button type="button" class="mode-btn" [class.active]="paymentMode === 'cash'" (click)="setPaymentMode('cash')">Cash</button>
+      <button type="button" class="mode-btn" [class.active]="paymentMode === 'gpay'" (click)="setPaymentMode('gpay')">Gpay</button>
       <button type="button" class="mode-btn" [class.active]="paymentMode === 'upi'" (click)="setPaymentMode('upi')">UPI</button>
+      
+      <button type="button" class="mode-btn" [class.active]="paymentMode === 'emi'" (click)="setPaymentMode('emi')">EMI</button>
       <button type="button" class="mode-btn" [class.active]="paymentMode === 'card'" (click)="setPaymentMode('card')">Card</button>
     </div>
-    @if (!showMorePaymentModes()) {
-      <button type="button" class="inline-link-btn" (click)="showMorePaymentModes.set(true)">More payment options</button>
-    } @else {
-      <div class="field">
-        <label for="payment_mode_more">Credit / Other</label>
-        <select id="payment_mode_more" name="payment_mode_more" [(ngModel)]="paymentMode">
-          <option value="credit">Credit</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-    }
 
     @if (!editMode()) {
       <div class="field cash-received-field">
-        <label>Cash Received</label>
+        <label>{{ amountPaidLabel() }}</label>
         <div class="amount-paid-row">
-          <input type="number" min="0" step="0.01" [(ngModel)]="amountPaidText" placeholder="Full amount" />
+          <input type="number" min="0" step="0.01" [ngModel]="amountPaidText" (ngModelChange)="onAmountPaidChange($event)" placeholder="Amount" />
           <button type="button" class="btn btn-secondary btn-sm" (click)="useFullAmount()">Full</button>
         </div>
       </div>
+      @if (paymentMode === 'emi') {
+        <div class="field emi-amount-field">
+          <label>EMI Amount (₹)</label>
+          <input type="number" min="0" step="0.01" [(ngModel)]="emiAmount" placeholder="Auto-calculated" />
+          <span class="field-hint">Auto-filled as Grand Total − Initial Payment — adjust if needed.</span>
+        </div>
+      }
       @if (paymentMode === 'cash' && changeDue() > 0) {
         <div class="change-due">Change due: <strong>₹{{ changeDue() | number: '1.2-2' }}</strong></div>
       }
       @if (balanceDue() > 0) {
         <div class="balance-due-note">
           Balance due: <strong>₹{{ balanceDue() | number: '1.2-2' }}</strong>
-          <span>This bill will be saved as a credit sale — the customer will still owe this amount.</span>
+          <span>
+            @if (paymentMode === 'emi') {
+              This bill will be saved as an EMI sale — the customer will still owe this amount beyond the initial payment.
+            } @else {
+              This bill will be saved as a credit sale — the customer will still owe this amount.
+            }
+          </span>
         </div>
       }
     } @else if (editOriginalInvoice(); as orig) {
+      @if (paymentMode === 'emi') {
+        <div class="field emi-amount-field">
+          <label>EMI Amount (₹)</label>
+          <input type="number" min="0" step="0.01" [(ngModel)]="emiAmount" placeholder="Auto-calculated" />
+        </div>
+      }
       <div class="balance-due-note edit-payment-note">
         Already paid: <strong>₹{{ num(orig.amount_paid) | number: '1.2-2' }}</strong> · Balance due (before this edit): <strong>₹{{ num(orig.balance_due) | number: '1.2-2' }}</strong>
         <span>Payments aren't changed here — record or adjust them from the invoice's own Record Payment card after saving.</span>

@@ -5,7 +5,7 @@
       @if (editMode()) {
         Fixing a mistake on this purchase? Change the items/supplier/date below and save - the purchase's identity stays the same. This is blocked if any of its stock has already been sold, returned, or marked damaged.
       } @else {
-        Pick a product to see whether it needs IMEI, a Serial No., or just a quantity — stock is created automatically on save.
+        Add a product and enter the quantity received - stock is created automatically on save. IMEI/Serial No. (for mobiles, ACs, etc.) is entered later, at the time of sale.
       }
     </p>
   </div>
@@ -161,7 +161,7 @@
                 <span class="variant-value">{{ line.product?.brand_name || '—' }}</span>
               </td>
               <td class="col-qty">
-                @if (line.product && (line.product.is_imei_required || line.product.is_serial_required)) {
+                @if (line.units.length > 0 || line.serials.length > 0) {
                   <input type="number" class="cell-input" [value]="lineQuantity(line)" disabled />
                 } @else {
                   <input
@@ -226,7 +226,7 @@
                 </button>
               </td>
             </tr>
-            @if (line.product?.is_imei_required) {
+            @if (line.units.length > 0) {
               <tr class="expand-row">
                 <td colspan="10">
                   <div class="unit-editor">
@@ -251,7 +251,7 @@
                   </div>
                 </td>
               </tr>
-            } @else if (line.product?.is_serial_required) {
+            } @else if (line.serials.length > 0) {
               <tr class="expand-row">
                 <td colspan="10">
                   <div class="unit-editor">
@@ -552,6 +552,7 @@
             <span>Serial number required</span>
           </label>
         </div>
+        <p class="field-hint">Only affects Billing (sales) - the cashier types the IMEI/Serial in by hand at the point of sale. Purchases for this category still just take a quantity.</p>
 
         <div class="field">
           <label for="cm_size">Size type (Home Appliance only)</label>

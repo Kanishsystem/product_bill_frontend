@@ -17,30 +17,33 @@ import { StockItem } from '../../../core/models/stock-item.model';
 import { PaymentMode, SalesCreateInput, SalesInvoice, SalesItemInput, SalesUpdateInput } from '../../../core/models/sale.model';
 import { Icon } from '../../../shared/components/icon/icon';
 
-/** One row in the billing cart. Serialized items (isSerialized) carry the
- * exact stock_item_id picked via scan or manual pick - quantity is always 1
- * and can't be edited. Batch items carry an editable quantity; the server
- * is the final authority on whether that much is actually on hand.
- * discountPercent/warranty stay real fields (still sent to the server) but
- * are tucked behind a per-row "details" expander rather than shown inline,
- * to keep the main table as clean as the counter-friendly POS layout. */
+/** One row in the billing cart. imeiRequired/serialRequired come from the
+ * product's category and just decide whether an inline IMEI/Serial field
+ * shows in the table (see billing.html) - the value itself is now optional,
+ * typed in only if the cashier wants to record it, and quantity is a normal
+ * editable field for every line regardless of category. stockItemId is set
+ * only by the legacy scan path (lookupScan()/addSerializedUnit(), against a
+ * dedicated stock unit created before purchases moved to plain quantities)
+ * and is otherwise null; the server always allocates the actual stock_items
+ * row itself (consumeBatchStock()) regardless of which path a line came
+ * from - see SalesService::buildAllocationRows(). There's no per-line
+ * discount or warranty any more (see billWarrantyYears/billWarrantyMonths
+ * below) - both are bill-level now. */
 interface CartLine {
   key: string;
   productId: number;
   productName: string;
   categoryName: string;
   brand: string | null;
-  isSerialized: boolean;
+  imeiRequired: boolean;
+  serialRequired: boolean;
   stockItemId: number | null;
   imei1: string | null;
   imei2: string | null;
   serialNo: string | null;
   quantity: number;
   rate: number;
-  discountPercent: number;
   gstRate: number;
-  warrantyYears: number;
-  warrantyMonths: number;
 }
 
 function round2(value: number): number {
@@ -88,8 +91,12 @@ export class Billing implements OnInit {
    * this - see onCustomerSearchChange()/openCustomerDropdown(). */
   private customerFilterQuery = '';
   invoiceDate = new Date().toISOString().slice(0, 10);
+  /** As of iteration log item 59, exactly 5 buttons in a single row:
+   * Cash/UPI/Card/EMI/Gpay - there's no longer a "More payment options"
+   * dropdown hiding Credit/Other/Cash in Hand, since those three are no
+   * longer offered for a new bill at all (see PaymentMode's doc comment on
+   * why the type itself still includes them). */
   paymentMode: PaymentMode = 'cash';
-  showMorePaymentModes = signal(false);
   /** Bound to the Cash Received `<input type="number">`. Despite the name/
    * declared type, Angular's NumberValueAccessor writes back an actual JS
    * number (or null) here the moment the user TYPES into the field - it
@@ -100,6 +107,18 @@ export class Billing implements OnInit {
    * "amountPaidText.trim is not a function" the instant a real amount was
    * typed, silently breaking Checkout with no visible error to the user.) */
   amountPaidText: string | number | null = '';
+
+  /** Only meaningful when paymentMode === 'emi' - the figure recorded on the
+   * invoice purely for reference/printing (see SalesInvoice.emi_amount's doc
+   * comment - no schedule/due-dates/tracking beyond this one number).
+   * "Cash Received" above doubles as EMI's Initial Payment field in that
+   * case - see the relabeled amountPaidLabel(). Auto-calculated as
+   * Grand Total minus Initial Payment every time Initial Payment changes
+   * (see onAmountPaidChange()/useFullAmount()/setPaymentMode()) - the user
+   * can still type over the auto-filled value by hand afterwards, but it
+   * gets recalculated (silently overwriting any manual edit) the next time
+   * Initial Payment itself changes. */
+  emiAmount: number | null = null;
 
   showQuickCustomer = signal(false);
   quickCustomerName = '';
@@ -117,16 +136,17 @@ export class Billing implements OnInit {
   productSearch = '';
   productDropdownOpen = signal(false);
 
-  pickerProduct = signal<Product | null>(null);
-  pickerUnits = signal<StockItem[]>([]);
-  pickerLoading = signal(false);
-
   cart = signal<CartLine[]>([]);
 
-  /** Which cart line's Discount/Warranty details row is expanded, if any. */
-  openDetailsKey = signal<string | null>(null);
-
   billDiscountPercent = 0;
+
+  /** Warranty is one setting for the whole bill now, not per line - applied
+   * to every item at save() time. Loaded for edit from whatever the first
+   * item on the invoice already carries (historical invoices could have
+   * differing per-item warranty; editing and saving now flattens every line
+   * to this one value). */
+  billWarrantyYears = 0;
+  billWarrantyMonths = 0;
 
   /** Shop's home state (Company Profile), loaded once here purely to preview
    * whether this bill will save as CGST+SGST or IGST - see taxType() below.
@@ -204,10 +224,12 @@ export class Billing implements OnInit {
         this.customerSearch = inv.customer_name + (inv.customer_phone ? ' — ' + inv.customer_phone : '');
         this.invoiceDate = inv.invoice_date;
         this.paymentMode = inv.payment_mode;
+        this.emiAmount = inv.emi_amount !== null ? Number(inv.emi_amount) || 0 : null;
         this.billDiscountPercent = Number(inv.bill_discount_percent) || 0;
 
+        const items = inv.items ?? [];
         this.cart.set(
-          (inv.items ?? []).map((item) => {
+          items.map((item) => {
             const product = this.products().find((p) => p.id === item.product_id) ?? null;
             const isSerialized = !!(item.imei1 || item.serial_no);
             return {
@@ -216,7 +238,11 @@ export class Billing implements OnInit {
               productName: item.product_name,
               categoryName: product?.category_name ?? '',
               brand: product?.brand_name ?? null,
-              isSerialized,
+              // A historical line's own imei1/serial_no (whichever is
+              // present) is a reliable fallback if the product record can't
+              // be found any more, so the right inline field still shows.
+              imeiRequired: product ? !!product.is_imei_required : !!item.imei1,
+              serialRequired: product ? !!product.is_serial_required : !!item.serial_no,
               stockItemId: isSerialized ? item.stock_item_id : null,
               imei1: item.imei1,
               imei2: item.imei2,
@@ -227,13 +253,17 @@ export class Billing implements OnInit {
               // the *display* getter/setter pair converts, same as any
               // other cart line).
               rate: Number(item.rate),
-              discountPercent: Number(item.discount_percent) || 0,
               gstRate: Number(item.gst_rate),
-              warrantyYears: Number(item.warranty_years) || 0,
-              warrantyMonths: Number(item.warranty_months) || 0,
             };
           }),
         );
+        // Warranty moved from per-line to bill-level - seed it from the
+        // first item that actually has one (historical invoices could have
+        // differing per-item values; saving this invoice again now flattens
+        // every line to this one bill-level figure).
+        const withWarranty = items.find((item) => Number(item.warranty_years) || Number(item.warranty_months));
+        this.billWarrantyYears = Number(withWarranty?.warranty_years) || 0;
+        this.billWarrantyMonths = Number(withWarranty?.warranty_months) || 0;
         // This runs off an HTTP response with no signal write of its own to
         // piggyback a repaint on for the plain (non-signal) customerSearch/
         // invoiceDate/paymentMode/billDiscountPercent properties just set
@@ -463,16 +493,13 @@ export class Billing implements OnInit {
    * clerk realistically leaves open across many customers all day, and
    * stock can change in the meantime from a Purchase entry or another
    * sale. Without this, the search dropdown's "N in stock"/"Out of stock"
-   * badges (see follow-up #18) could go stale while the unit-picker's own
-   * stock/ledger lookup (openPicker() -> stockService.ledger()) always
-   * queries live - exactly the mismatch a user reported (dropdown said
-   * "Out of stock" for a product that "Pick unit" then correctly listed 2
-   * available units for). Deliberately a silent background refresh (no
-   * loading spinner, errors swallowed) so opening the dropdown still feels
-   * instant off the previous list and then quietly updates once the fresh
-   * one lands, rather than blocking the search box on a network round
-   * trip. Already-added cart lines are unaffected - they hold their own
-   * copied fields, not a live reference into products(). */
+   * badges (see follow-up #18) could go stale for an entire counter shift.
+   * Deliberately a silent background refresh (no loading spinner, errors
+   * swallowed) so opening the dropdown still feels instant off the
+   * previous list and then quietly updates once the fresh one lands,
+   * rather than blocking the search box on a network round trip.
+   * Already-added cart lines are unaffected - they hold their own copied
+   * fields, not a live reference into products(). */
   private refreshProductStock(): void {
     this.productService.list({ status: 'active' }).subscribe({
       next: (res) => this.products.set(res.data ?? this.products()),
@@ -484,18 +511,17 @@ export class Billing implements OnInit {
     setTimeout(() => this.productDropdownOpen.set(false), 150);
   }
 
-  /** For a batch (non-serialized) product, add straight to cart. For a
-   * serialized one, open the unit picker instead of guessing which unit. */
+  /** Adds straight to cart for every product now, IMEI/Serial-required or
+   * not - there's no more separate "pick/enter a unit" step in the way. A
+   * product whose category wants an IMEI or Serial No. just gets an extra
+   * inline field in its cart row (see billing.html) where the cashier can
+   * optionally type one in; quantity is a normal editable field either way. */
   selectProduct(product: Product): void {
     this.productDropdownOpen.set(false);
     if (this.cartFull()) {
       this.toast.error(
         `This bill already has ${Billing.MAX_CART_LINES} items — the max for one invoice. Start a new bill for anything more.`,
       );
-      return;
-    }
-    if (product.is_imei_required || product.is_serial_required) {
-      this.openPicker(product);
       return;
     }
     this.cart.update((rows) => [
@@ -506,11 +532,12 @@ export class Billing implements OnInit {
         productName: product.name,
         categoryName: product.category_name ?? '',
         brand: product.brand_name ?? null,
-        isSerialized: false,
+        imeiRequired: !!product.is_imei_required,
+        serialRequired: !!product.is_serial_required,
         stockItemId: null,
-        imei1: null,
-        imei2: null,
-        serialNo: null,
+        imei1: product.is_imei_required ? '' : null,
+        imei2: product.is_imei_required ? '' : null,
+        serialNo: product.is_serial_required ? '' : null,
         quantity: 1,
         // product.selling_price is GST-inclusive (the customer-facing price);
         // line.rate must stay ex-GST underneath (see lineRateInclusive() below
@@ -519,41 +546,17 @@ export class Billing implements OnInit {
         // round-trip back up for display lands exactly on the original
         // selling price instead of one paisa short - see money.ts.
         rate: exGstFromInclusiveExact(Number(product.selling_price), Number(product.tax_rate)),
-        discountPercent: 0,
         gstRate: Number(product.tax_rate),
-        warrantyYears: 0,
-        warrantyMonths: 0,
       },
     ]);
     this.productSearch = '';
   }
 
-  openPicker(product: Product): void {
-    this.pickerProduct.set(product);
-    this.pickerLoading.set(true);
-    this.stockService.ledger({ product_id: product.id, status: 'in_stock' }).subscribe({
-      next: (res) => {
-        this.pickerLoading.set(false);
-        this.pickerUnits.set(res.data ?? []);
-      },
-      error: (err) => {
-        this.pickerLoading.set(false);
-        this.toast.error(extractErrorMessage(err, 'Could not load available units.'));
-      },
-    });
-  }
-
-  closePicker(): void {
-    this.pickerProduct.set(null);
-    this.pickerUnits.set([]);
-  }
-
-  pickUnit(unit: StockItem): void {
-    this.addSerializedUnit(unit);
-    this.closePicker();
-    this.productSearch = '';
-  }
-
+  /** Adds a cart line from an EXISTING serialized stock unit - the path
+   * lookupScan() still uses for a barcode/keyboard-wedge scan against a
+   * dedicated stock unit created before purchases moved to plain quantities.
+   * A fresh product added via selectProduct() above never has a StockItem
+   * behind it any more. */
   private addSerializedUnit(unit: StockItem): void {
     if (this.cart().some((l) => l.stockItemId === unit.id)) {
       this.toast.error('That unit is already in the cart.');
@@ -574,7 +577,8 @@ export class Billing implements OnInit {
         productName: unit.product_name,
         categoryName: unit.category_name,
         brand: product?.brand_name ?? null,
-        isSerialized: true,
+        imeiRequired: product ? !!product.is_imei_required : !!unit.imei1,
+        serialRequired: product ? !!product.is_serial_required : !!unit.serial_no,
         stockItemId: unit.id,
         imei1: unit.imei1,
         imei2: unit.imei2,
@@ -584,10 +588,7 @@ export class Billing implements OnInit {
         // product.selling_price above - convert down to ex-GST for line.rate,
         // unrounded (see exGstFromInclusiveExact's doc comment in money.ts).
         rate: exGstFromInclusiveExact(Number(unit.selling_price), Number(product?.tax_rate) || 18),
-        discountPercent: 0,
         gstRate: Number(product?.tax_rate) || 18,
-        warrantyYears: 0,
-        warrantyMonths: 0,
       },
     ]);
   }
@@ -604,17 +605,6 @@ export class Billing implements OnInit {
 
   removeLine(key: string): void {
     this.cart.update((rows) => rows.filter((r) => r.key !== key));
-    if (this.openDetailsKey() === key) {
-      this.openDetailsKey.set(null);
-    }
-  }
-
-  toggleLineDetails(key: string): void {
-    this.openDetailsKey.set(this.openDetailsKey() === key ? null : key);
-  }
-
-  isLineDetailsOpen(key: string): boolean {
-    return this.openDetailsKey() === key;
   }
 
   /** The Rate column is entered/shown GST-inclusive (matching the Purchase
@@ -637,13 +627,12 @@ export class Billing implements OnInit {
     line.rate = exGstFromInclusiveExact(Number(value) || 0, line.gstRate);
   }
 
-  /** Pre-tax, pre-line-discount-adjusted amount for one line (rate net of
-   * its own line discount, times quantity) - the GST amount is layered on
-   * top of this, the bill-level discount is layered on top of the sum of
-   * these across the whole cart. */
+  /** Pre-tax amount for one line (rate times quantity) - there's no more
+   * per-line discount, only the bill-level one (billDiscountAmount() below),
+   * which is layered on top of the sum of these across the whole cart. The
+   * GST amount is layered on top of this too. */
   lineTaxableAmount(line: CartLine): number {
-    const salePrice = line.rate * (1 - line.discountPercent / 100);
-    return salePrice * line.quantity;
+    return line.rate * line.quantity;
   }
 
   lineGstAmount(line: CartLine): number {
@@ -782,12 +771,41 @@ export class Billing implements OnInit {
     return Number(value) || 0;
   }
 
+  /** Switching TO 'emi' auto-fills EMI Amount from whatever's already in
+   * Initial Payment, same formula as onAmountPaidChange() below, so
+   * arriving at EMI after already typing an amount doesn't leave a
+   * stale/blank EMI Amount behind. */
   setPaymentMode(mode: PaymentMode): void {
     this.paymentMode = mode;
+    if (mode === 'emi' && this.amountPaidEntered()) {
+      this.emiAmount = this.balanceDue();
+    }
+  }
+
+  /** The "Cash Received" field doubles as EMI's Initial Payment (same
+   * amount_paid column underneath - see SalesService's class doc comment) -
+   * relabeled here rather than duplicating a second amount field. */
+  amountPaidLabel(): string {
+    return this.paymentMode === 'emi' ? 'Initial Payment' : 'Cash Received';
+  }
+
+  /** Bound to Initial Payment/Cash Received's (ngModelChange). Whenever the
+   * bill is in EMI mode, EMI Amount auto-recalculates as Grand Total minus
+   * whatever was just typed here (balanceDue() - the same "what's left
+   * owing" figure shown elsewhere on this screen) - see emiAmount's doc
+   * comment for the manual-override caveat. */
+  onAmountPaidChange(value: string | number | null): void {
+    this.amountPaidText = value;
+    if (this.paymentMode === 'emi') {
+      this.emiAmount = this.balanceDue();
+    }
   }
 
   useFullAmount(): void {
     this.amountPaidText = this.grandTotal().toFixed(2);
+    if (this.paymentMode === 'emi') {
+      this.emiAmount = this.balanceDue();
+    }
   }
 
   /** True once the user has typed/set SOME value into Cash Received - works
@@ -828,13 +846,15 @@ export class Billing implements OnInit {
     if (!confirmed) return;
 
     this.cart.set([]);
-    this.openDetailsKey.set(null);
     this.scanCode = '';
     this.productSearch = '';
     this.billDiscountPercent = 0;
     this.billDiscountAmountOverride = null;
+    this.billWarrantyYears = 0;
+    this.billWarrantyMonths = 0;
     this.amountPaidText = '';
     this.paymentMode = 'cash';
+    this.emiAmount = null;
     this.customerId = null;
     this.customerSearch = '';
     const walkIn = this.customers().find((c) => c.name.toLowerCase() === 'walk-in customer');
@@ -852,21 +872,41 @@ export class Billing implements OnInit {
       this.toast.error('Add at least one item to the cart.');
       return;
     }
-
+    // EMI never has a schedule/due-dates in this app (see emiAmount's doc
+    // comment) - just these two figures, both required up front so the
+    // invoice always has something meaningful to print. Initial Payment is
+    // only ever collected in create mode (amount_paid is never touched by
+    // an edit, same as every other payment mode - see save()'s update
+    // payload below), so that half of the check is skipped while editing.
+    if (this.paymentMode === 'emi') {
+      if (!this.editMode() && !this.amountPaidEntered()) {
+        this.toast.error('Enter the Initial Payment received for this EMI sale.');
+        return;
+      }
+      if (!this.emiAmount || this.emiAmount <= 0) {
+        this.toast.error('Enter the EMI Amount for this sale.');
+        return;
+      }
+    }
+    // IMEI/Serial is optional metadata now, typed in only if the cashier
+    // wants it - never required to save. Quantity is always sent, and the
+    // one bill-level warranty setting is flattened onto every line at save
+    // time (see billWarrantyYears/billWarrantyMonths above). The server
+    // allocates the actual stock via consumeBatchStock() regardless of
+    // whether imei1/imei2/serial_no are filled in - see
+    // SalesService::buildAllocationRows().
     const items: SalesItemInput[] = this.cart().map((line) => {
       const item: SalesItemInput = {
         product_id: line.productId,
         rate: line.rate,
-        discount_percent: line.discountPercent,
         gst_rate: line.gstRate,
-        warranty_years: line.warrantyYears,
-        warranty_months: line.warrantyMonths,
+        quantity: line.quantity,
+        warranty_years: this.billWarrantyYears,
+        warranty_months: this.billWarrantyMonths,
       };
-      if (line.isSerialized) {
-        item.stock_item_id = line.stockItemId as number;
-      } else {
-        item.quantity = line.quantity;
-      }
+      if (line.imei1?.trim()) item.imei1 = line.imei1.trim();
+      if (line.imei2?.trim()) item.imei2 = line.imei2.trim();
+      if (line.serialNo?.trim()) item.serial_no = line.serialNo.trim();
       return item;
     });
 
@@ -879,6 +919,9 @@ export class Billing implements OnInit {
         bill_discount_percent: this.billDiscountPercent || 0,
         items,
       };
+      if (this.paymentMode === 'emi') {
+        updatePayload.emi_amount = this.emiAmount || 0;
+      }
       this.saving.set(true);
       this.salesService.update(updatePayload).subscribe({
         next: (res) => {
@@ -901,6 +944,9 @@ export class Billing implements OnInit {
       bill_discount_percent: this.billDiscountPercent || 0,
       items,
     };
+    if (this.paymentMode === 'emi') {
+      payload.emi_amount = this.emiAmount || 0;
+    }
     if (this.amountPaidEntered()) {
       payload.amount_paid = Number(this.amountPaidText);
     }

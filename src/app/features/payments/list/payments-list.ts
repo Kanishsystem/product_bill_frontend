@@ -1,5 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { SalesService } from '../../../core/services/sales.service';
@@ -26,7 +26,7 @@ import { EmptyState } from '../../../shared/components/empty-state/empty-state';
 @Component({
   selector: 'app-payments-list',
   standalone: true,
-  imports: [FormsModule, RouterLink, Icon, EmptyState, DecimalPipe],
+  imports: [FormsModule, RouterLink, Icon, EmptyState, DecimalPipe, DatePipe],
   templateUrl: './payments-list.html',
   styleUrl: './payments-list.scss',
 })

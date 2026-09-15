@@ -87,7 +87,7 @@
             <th>Item Particulars</th>
             <th class="num">Rate</th>
             <th class="num">Qty</th>
-            <th class="num">GST</th>
+            <th class="num">GST %</th>
             <th class="num">Amount</th>
           </tr>
         </thead>
@@ -216,7 +216,20 @@
           <span>Paid :</span>
           <span>₹{{ num(inv.amount_paid) | number: '1.2-2' }}</span>
         </div>
-        @if (hasBalanceDue()) {
+        @if (inv.payment_mode === 'emi' && num(inv.emi_amount) > 0) {
+          <div class="grand-row">
+            <span>EMI Amount :</span>
+            <span>₹{{ num(inv.emi_amount) | number: '1.2-2' }}</span>
+          </div>
+        }
+        <!-- Skipped for EMI (item 61, client: "customer paid 100, EMI 200 so
+             balance no need to display") - the EMI Amount row just above
+             already tells the customer what's still owed on this bill, so
+             printing Balance Due too was just the same figure twice. The
+             on-screen "Record a Payment" card below (no-print) still shows
+             balance_due normally - the shop still needs to see and collect
+             against it later, this only trims what prints on paper. -->
+        @if (hasBalanceDue() && inv.payment_mode !== 'emi') {
           <div class="grand-row balance-due">
             <span>Balance Due :</span>
             <span>₹{{ num(inv.balance_due) | number: '1.2-2' }}</span>
@@ -290,6 +303,7 @@
             <option value="card">Card</option>
             <option value="upi">UPI</option>
             <option value="other">Other</option>
+            <option value="cash_in_hand">Cash in Hand</option>
           </select>
         </div>
         <div class="field note-field">
@@ -320,9 +334,9 @@
           <tbody>
             @for (p of payments(); track p.id) {
               <tr>
-                <td data-label="Date">{{ p.received_at }}</td>
+                <td data-label="Date">{{ p.received_at | date: 'dd-MM-yyyy' }}</td>
                 <td data-label="Amount" class="cell-strong">₹{{ num(p.amount) | number: '1.2-2' }}</td>
-                <td data-label="Mode">{{ p.payment_mode }}</td>
+                <td data-label="Mode">{{ p.payment_mode.replaceAll('_', ' ') }}</td>
                 <td data-label="Note">{{ p.note || '—' }}</td>
                 <td data-label="Recorded By">{{ p.received_by_name || '—' }}</td>
               </tr>

@@ -77,7 +77,7 @@
               @for (inv of sales(); track inv.id) {
                 <tr [class.row-critical]="num(inv.balance_due) > 0">
                   <td data-label="Invoice No" class="cell-strong">{{ inv.invoice_no }}</td>
-                  <td data-label="Date">{{ inv.invoice_date }}</td>
+                  <td data-label="Date">{{ inv.invoice_date | date: 'dd-MM-yyyy' }}</td>
                   <td data-label="Total">₹{{ num(inv.total_amount) | number: '1.2-2' }}</td>
                   <td data-label="Paid">₹{{ num(inv.amount_paid) | number: '1.2-2' }}</td>
                   <td data-label="Balance Due">₹{{ num(inv.balance_due) | number: '1.2-2' }}</td>
@@ -117,10 +117,10 @@
             <tbody>
               @for (pay of salesPayments(); track pay.id) {
                 <tr>
-                  <td data-label="Date">{{ pay.received_at }}</td>
+                  <td data-label="Date">{{ pay.received_at | date: 'dd-MM-yyyy' }}</td>
                   <td data-label="Invoice No">{{ pay.invoice_no }}</td>
                   <td data-label="Amount" class="cell-strong">₹{{ num(pay.amount) | number: '1.2-2' }}</td>
-                  <td data-label="Mode">{{ pay.payment_mode }}</td>
+                  <td data-label="Mode">{{ pay.payment_mode.replaceAll('_', ' ') }}</td>
                   <td data-label="Note">{{ pay.note || '—' }}</td>
                   <td data-label="Recorded By">{{ pay.received_by_name || '—' }}</td>
                 </tr>
@@ -152,7 +152,7 @@
               @for (pur of purchases(); track pur.id) {
                 <tr [class.row-critical]="num(pur.balance_due) > 0">
                   <td data-label="Invoice No" class="cell-strong">{{ pur.supplier_invoice_no }}</td>
-                  <td data-label="Date">{{ pur.purchase_date }}</td>
+                  <td data-label="Date">{{ pur.purchase_date | date: 'dd-MM-yyyy' }}</td>
                   <td data-label="Total">₹{{ num(pur.total_amount) | number: '1.2-2' }}</td>
                   <td data-label="Paid">₹{{ num(pur.amount_paid) | number: '1.2-2' }}</td>
                   <td data-label="Balance Due">₹{{ num(pur.balance_due) | number: '1.2-2' }}</td>
@@ -189,7 +189,7 @@
             <tbody>
               @for (pay of purchasePayments(); track pay.id) {
                 <tr>
-                  <td data-label="Date">{{ pay.paid_at }}</td>
+                  <td data-label="Date">{{ pay.paid_at | date: 'dd-MM-yyyy' }}</td>
                   <td data-label="Invoice No">{{ pay.supplier_invoice_no }}</td>
                   <td data-label="Amount" class="cell-strong">₹{{ num(pay.amount) | number: '1.2-2' }}</td>
                   <td data-label="Mode">{{ pay.payment_mode }}</td>

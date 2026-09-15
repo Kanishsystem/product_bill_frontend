@@ -336,49 +336,6 @@
   line-height: 1.4;
 }
 
-// ---- Picker overlay (IMEI/Serial unit picker) ----
-
-.form-card {
-  padding: 1.25rem 1.4rem;
-  margin-bottom: 1rem;
-}
-
-.picker-card {
-  border: 1px solid var(--brand);
-}
-
-.picker-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-weight: 700;
-  margin-bottom: 0.75rem;
-}
-
-.unit-picker-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  max-height: 260px;
-  overflow-y: auto;
-}
-
-.unit-picker-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.55rem 0.7rem;
-  background: #fff;
-  text-align: left;
-
-  &:hover {
-    border-color: var(--brand);
-    background: var(--brand-light);
-  }
-}
-
 .loading-text {
   color: var(--text-muted);
   font-size: 0.88rem;
@@ -445,7 +402,7 @@
     letter-spacing: normal;
   }
 
-  tbody tr:not(.expand-row) {
+  tbody tr {
     border-bottom: 1px solid var(--border);
   }
 
@@ -526,41 +483,35 @@
   font-weight: 700;
 }
 
-.expand-row td {
-  padding: 0;
-  border-bottom: 1px solid var(--border);
+// Inline, non-mandatory IMEI/Serial input(s) shown directly under a cart
+// line's product name (col-product) when its category wants one - see
+// CartLine.imeiRequired/serialRequired in billing.ts. Deliberately compact
+// (cell-input-sm, not the full-size .cell-input) since this sits inside an
+// already-busy table cell alongside the product name/category line.
+.inline-serial-row {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
 }
 
-.line-details {
-  display: flex;
-  gap: 1.25rem;
-  padding: 0.75rem 1rem;
-  background: var(--bg-app);
-  flex-wrap: wrap;
+.cell-input-sm {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.78rem;
+  background: #fff;
+  color: var(--text);
 
-  label {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    font-size: 0.78rem;
-    font-weight: 600;
+  &::placeholder {
     color: var(--text-muted);
+  }
 
-    input {
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.4rem 0.55rem;
-      background: #fff;
-      font-weight: 400;
-      color: var(--text);
-      width: 110px;
-
-      &:focus {
-        outline: none;
-        border-color: var(--brand);
-        box-shadow: 0 0 0 3px var(--brand-light);
-      }
-    }
+  &:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 2px var(--brand-light);
   }
 }
 
@@ -750,6 +701,14 @@
 
 .cash-received-field {
   margin-top: -0.2rem;
+}
+
+.emi-amount-field {
+  .field-hint {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
 }
 
 .amount-paid-row {

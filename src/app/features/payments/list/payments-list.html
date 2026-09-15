@@ -66,7 +66,7 @@
             <tr>
               <td data-label="Invoice No" class="cell-strong">{{ inv.invoice_no }}</td>
               <td data-label="Customer">{{ inv.customer_name }}</td>
-              <td data-label="Date">{{ inv.invoice_date }}</td>
+              <td data-label="Date">{{ inv.invoice_date | date: 'dd-MM-yyyy' }}</td>
               <td data-label="Total">₹{{ num(inv.total_amount) | number: '1.2-2' }}</td>
               <td data-label="Paid">₹{{ num(inv.amount_paid) | number: '1.2-2' }}</td>
               <td data-label="Balance Due" class="due-cell">₹{{ num(inv.balance_due) | number: '1.2-2' }}</td>
@@ -108,7 +108,7 @@
             <tr>
               <td data-label="Invoice No" class="cell-strong">{{ pur.supplier_invoice_no }}</td>
               <td data-label="Supplier">{{ pur.supplier_name }}</td>
-              <td data-label="Date">{{ pur.purchase_date }}</td>
+              <td data-label="Date">{{ pur.purchase_date | date: 'dd-MM-yyyy' }}</td>
               <td data-label="Total">₹{{ num(pur.total_amount) | number: '1.2-2' }}</td>
               <td data-label="Paid">₹{{ num(pur.amount_paid) | number: '1.2-2' }}</td>
               <td data-label="Balance Due" class="due-cell">₹{{ num(pur.balance_due) | number: '1.2-2' }}</td>

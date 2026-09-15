@@ -641,17 +641,15 @@ export class PurchaseForm implements OnInit {
     line.gstRate = Number(product.tax_rate);
     line.rate = Number(product.base_price) || null;
 
-    if (product.is_imei_required) {
-      line.units = [{ imei1: '', imei2: '' }];
-      line.serials = [];
-    } else if (product.is_serial_required) {
-      line.serials = [''];
-      line.units = [];
-    } else {
-      line.units = [];
-      line.serials = [];
-      line.quantity = 1;
-    }
+    // Purchases no longer collect per-unit IMEI/Serial - the client wants a
+    // plain quantity here for every category, IMEI/Serial included; that is
+    // now typed in manually at sale time instead. A freshly (re)selected
+    // product on this line always gets the simple quantity path. (Historical
+    // lines loaded via mapItemsToLines() for editing an old purchase already
+    // have their units/serials populated and never pass back through here.)
+    line.units = [];
+    line.serials = [];
+    line.quantity = 1;
   }
 
   addUnit(line: LineDraft): void {
@@ -671,10 +669,13 @@ export class PurchaseForm implements OnInit {
   }
 
   /** Client-side estimate only - the server computes the authoritative,
-   * tax-split totals once the purchase is saved. */
+   * tax-split totals once the purchase is saved. Data-driven, not category-
+   * flag-driven: a line only carries units/serials when it was loaded from a
+   * historical purchase recorded before this change - a freshly selected
+   * product (any category) always goes through the plain quantity field. */
   lineQuantity(line: LineDraft): number {
-    if (line.product?.is_imei_required) return line.units.length;
-    if (line.product?.is_serial_required) return line.serials.length;
+    if (line.units.length > 0) return line.units.length;
+    if (line.serials.length > 0) return line.serials.length;
     return line.quantity || 0;
   }
 
@@ -745,16 +746,17 @@ export class PurchaseForm implements OnInit {
       if (!line.productId) return `Line ${n}: select a product.`;
       if (line.rate === null || line.rate < 0) return `Line ${n}: enter a valid rate.`;
 
-      if (line.product?.is_imei_required) {
-        if (line.units.length === 0) return `Line ${n}: add at least one IMEI unit.`;
+      // Data-driven: only a line already carrying historical units/serials
+      // (loaded from an old purchase for editing) is validated as such - a
+      // fresh line, whatever the product's category, just needs a quantity.
+      if (line.units.length > 0) {
         const imeis = new Set<string>();
         for (const u of line.units) {
           if (!u.imei1.trim()) return `Line ${n}: IMEI1 is required for every unit.`;
           if (imeis.has(u.imei1.trim())) return `Line ${n}: duplicate IMEI1 "${u.imei1.trim()}" in this purchase.`;
           imeis.add(u.imei1.trim());
         }
-      } else if (line.product?.is_serial_required) {
-        if (line.serials.length === 0) return `Line ${n}: add at least one serial number.`;
+      } else if (line.serials.length > 0) {
         for (const s of line.serials) {
           if (!s.trim()) return `Line ${n}: serial number cannot be blank.`;
         }
@@ -781,12 +783,13 @@ export class PurchaseForm implements OnInit {
         hsn_sac_code: line.hsnCode || undefined,
         unit: line.unit || undefined,
       };
-      if (line.product?.is_imei_required) {
+      // Data-driven, same reasoning as validate() above.
+      if (line.units.length > 0) {
         item.units = line.units.map((u) => ({
           imei1: u.imei1.trim(),
           imei2: u.imei2.trim() || undefined,
         }));
-      } else if (line.product?.is_serial_required) {
+      } else if (line.serials.length > 0) {
         item.serials = line.serials.map((s) => s.trim());
       } else {
         item.quantity = line.quantity;

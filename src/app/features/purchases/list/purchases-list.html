@@ -45,7 +45,7 @@
         <tbody>
           @for (p of purchases(); track p.id) {
             <tr>
-              <td data-label="Date">{{ p.purchase_date }}</td>
+              <td data-label="Date">{{ p.purchase_date | date: 'dd-MM-yyyy' }}</td>
               <td data-label="Supplier" class="cell-strong">{{ p.supplier_name }}</td>
               <td data-label="Invoice No">{{ p.supplier_invoice_no }}</td>
               <td data-label="Tax">

@@ -33,6 +33,17 @@
         </select>
       </div>
     }
+    <div class="export-actions">
+      <button type="button" class="btn btn-secondary btn-sm" (click)="downloadPdf()">Download PDF</button>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="downloadExcel()">Download Excel</button>
+    </div>
+  </div>
+} @else {
+  <div class="card filter-bar">
+    <div class="export-actions">
+      <button type="button" class="btn btn-secondary btn-sm" (click)="downloadPdf()">Download PDF</button>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="downloadExcel()">Download Excel</button>
+    </div>
   </div>
 }
 
@@ -79,7 +90,9 @@
         <tbody>
           @for (row of r.rows; track row.period) {
             <tr>
-              <td data-label="Period" class="cell-strong">{{ row.period }}</td>
+              <td data-label="Period" class="cell-strong">
+                {{ r.group_by === 'day' ? (row.period | date: 'dd-MM-yyyy') : row.period }}
+              </td>
               @if (r.group_by !== 'category') {
                 <td data-label="Invoices">{{ row.invoice_count }}</td>
               }
@@ -97,7 +110,63 @@
   </div>
 
   <div class="card">
-    <h2 class="table-title">All invoices in this period</h2>
+    <h2 class="table-title">By Payment Mode</h2>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Mode</th>
+            <th>Invoices</th>
+            <th>Total</th>
+            <th>Collected</th>
+            <th>Balance Due</th>
+            <th>EMI Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of r.payment_modes; track row.payment_mode) {
+            <tr>
+              <td data-label="Mode" class="cell-strong">{{ row.payment_mode.replaceAll('_', ' ') }}</td>
+              <td data-label="Invoices">{{ row.invoice_count }}</td>
+              <td data-label="Total">₹{{ row.total | number: '1.2-2' }}</td>
+              <td data-label="Collected">₹{{ row.collected | number: '1.2-2' }}</td>
+              <td data-label="Balance Due">₹{{ row.balance_due | number: '1.2-2' }}</td>
+              <td data-label="EMI Amount">
+                @if (row.payment_mode === 'emi') {
+                  ₹{{ row.emi_amount | number: '1.2-2' }}
+                } @else {
+                  —
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-cell">No sales in this period.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="table-note">"Collected" is Cash Received/Initial Payment actually received for that mode; "Balance Due" is what's still owed. "EMI Amount" totals the recurring-installment figure recorded on EMI sales - it's for reference/printing only, not a tracked schedule.</p>
+  </div>
+
+  <div class="card">
+    <div class="table-header-row">
+      <h2 class="table-title">All invoices in this period</h2>
+      <div class="field invoice-mode-filter">
+        <label>Filter by Payment Mode</label>
+        <select [(ngModel)]="invoicePaymentModeFilter">
+          <option value="all">All modes</option>
+          <option value="cash">Cash</option>
+          <option value="card">Card</option>
+          <option value="upi">UPI</option>
+          <option value="credit">Credit</option>
+          <option value="other">Other</option>
+          <option value="cash_in_hand">Cash in Hand</option>
+          <option value="emi">EMI</option>
+        </select>
+      </div>
+    </div>
     <div class="table-wrap">
       <table class="data-table">
         <thead>
@@ -105,28 +174,40 @@
             <th>Invoice No</th>
             <th>Date</th>
             <th>Customer</th>
+            <th>Mobile</th>
             <th>Taxable</th>
             <th>GST</th>
             <th>Total</th>
+            <th>Payment Mode</th>
+            <th>EMI Amount</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          @for (inv of r.invoices; track inv.id) {
+          @for (inv of filterInvoicesByMode(r.invoices); track inv.id) {
             <tr [class.row-cancelled]="inv.status === 'cancelled'">
               <td data-label="Invoice No" class="cell-strong">{{ inv.invoice_no }}</td>
-              <td data-label="Date">{{ inv.invoice_date }}</td>
+              <td data-label="Date">{{ inv.invoice_date | date: 'dd-MM-yyyy' }}</td>
               <td data-label="Customer">{{ inv.customer_name }}</td>
+              <td data-label="Mobile">{{ inv.customer_phone || '—' }}</td>
               <td data-label="Taxable">₹{{ inv.taxable_amount }}</td>
               <td data-label="GST">₹{{ inv.gst }}</td>
               <td data-label="Total">₹{{ inv.total_amount }}</td>
+              <td data-label="Payment Mode">{{ inv.payment_mode.replaceAll('_', ' ') }}</td>
+              <td data-label="EMI Amount">
+                @if (inv.payment_mode === 'emi') {
+                  ₹{{ inv.emi_amount }}
+                } @else {
+                  —
+                }
+              </td>
               <td data-label="Status">
                 <span class="status-badge" [class]="'status-' + inv.status">{{ inv.status }}</span>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="empty-cell">No invoices in this period.</td>
+              <td colspan="10" class="empty-cell">No invoices in this period.</td>
             </tr>
           }
         </tbody>
@@ -170,7 +251,7 @@
         <tbody>
           @for (row of r.rows; track row.id) {
             <tr>
-              <td data-label="Date">{{ row.purchase_date }}</td>
+              <td data-label="Date">{{ row.purchase_date | date: 'dd-MM-yyyy' }}</td>
               <td data-label="Supplier" class="cell-strong">{{ row.supplier_name }}</td>
               <td data-label="Invoice No">{{ row.supplier_invoice_no }}</td>
               <td data-label="Tax">{{ row.tax_type === 'IGST' ? 'IGST' : 'CGST+SGST' }}</td>

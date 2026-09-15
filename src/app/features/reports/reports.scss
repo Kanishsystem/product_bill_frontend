@@ -56,6 +56,12 @@
   }
 }
 
+.export-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
 .loading-text {
   padding: 2rem;
   text-align: center;
@@ -113,6 +119,24 @@
   margin: 0 0 0.75rem;
   padding: 0 0.1rem;
   font-size: 0.95rem;
+}
+
+.table-header-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+
+  .table-title {
+    margin-bottom: 0;
+  }
+}
+
+.invoice-mode-filter {
+  margin: 0;
+  min-width: 180px;
 }
 
 .table-note {

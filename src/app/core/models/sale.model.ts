@@ -1,4 +1,16 @@
-export type PaymentMode = 'cash' | 'card' | 'upi' | 'credit' | 'other';
+// 'cash_in_hand' is tracked as its own distinct mode (not just an alias of
+// 'cash') - useful for a shop that reconciles cash collected by hand
+// separately from register cash. 'emi' records exactly one extra figure on
+// the invoice (SalesInvoice.emi_amount, the recurring installment amount) -
+// there's no installment schedule/due-dates/tracking beyond that; see
+// SalesService's class doc comment on the backend. 'gpay' is its own
+// distinct mode too, not an alias of 'upi'.
+//
+// As of iteration log item 59, Billing only offers cash/card/upi/emi/gpay
+// for a NEW bill (credit/other/cash_in_hand stay in this union, and stay
+// fully supported for reading/editing/printing/reporting, purely because
+// an older invoice may already have been saved with one of them).
+export type PaymentMode = 'cash' | 'card' | 'upi' | 'credit' | 'other' | 'cash_in_hand' | 'emi' | 'gpay';
 export type SalesInvoiceStatus = 'completed' | 'partially_returned' | 'returned' | 'cancelled';
 export type TaxType = 'CGST_SGST' | 'IGST';
 
@@ -46,6 +58,10 @@ export interface SalesInvoice {
   round_off: number | string;
   total_amount: number | string;
   payment_mode: PaymentMode;
+  /** Only ever set when payment_mode is 'emi' - the recurring installment
+   * figure, for reference/printing only (no schedule/due-dates/tracking -
+   * see SalesService's class doc comment). Null for every other mode. */
+  emi_amount: number | string | null;
   amount_paid: number | string;
   balance_due: number | string;
   /** How much cash the shop now owes back to the customer - only ever
@@ -59,7 +75,17 @@ export interface SalesInvoice {
 
 export interface SalesItemInput {
   product_id: number;
+  /** Legacy path only - a cart line built from a scanned/looked-up existing
+   * serialized stock unit still sends this (see Billing.lookupScan()). A
+   * fresh IMEI/Serial-required line now sends imei1/imei2/serial_no instead
+   * and is allocated against batch stock server-side - see
+   * SalesService::buildAllocationRows(). */
   stock_item_id?: number;
+  /** Manually typed at the point of sale for an IMEI/Serial-required
+   * product - see SalesService::buildAllocationRows(). */
+  imei1?: string;
+  imei2?: string;
+  serial_no?: string;
   quantity?: number;
   rate?: number;
   discount_percent?: number;
@@ -72,6 +98,9 @@ export interface SalesCreateInput {
   customer_id: number;
   invoice_date: string;
   payment_mode: PaymentMode;
+  /** Required by the server when payment_mode is 'emi' - see
+   * SalesController::validateCreate(). Ignored otherwise. */
+  emi_amount?: number;
   amount_paid?: number;
   bill_discount_percent?: number;
   items: SalesItemInput[];
@@ -87,6 +116,10 @@ export interface SalesUpdateInput {
   customer_id: number;
   invoice_date: string;
   payment_mode: PaymentMode;
+  /** Required by the server when payment_mode is 'emi' - see
+   * SalesController::validateCreate() (validateUpdate() reuses it). Ignored
+   * otherwise. */
+  emi_amount?: number;
   bill_discount_percent?: number;
   items: SalesItemInput[];
 }

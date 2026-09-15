@@ -1,5 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PartyService } from '../../../core/services/party.service';
 import { SalesService } from '../../../core/services/sales.service';
@@ -23,7 +23,7 @@ import { EmptyState } from '../../../shared/components/empty-state/empty-state';
 @Component({
   selector: 'app-party-detail',
   standalone: true,
-  imports: [RouterLink, Icon, DecimalPipe, EmptyState],
+  imports: [RouterLink, Icon, DecimalPipe, DatePipe, EmptyState],
   templateUrl: './party-detail.html',
   styleUrl: './party-detail.scss',
 })

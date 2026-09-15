@@ -1,4 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { PurchaseService } from '../../../core/services/purchase.service';
@@ -11,7 +12,7 @@ import { EmptyState } from '../../../shared/components/empty-state/empty-state';
 @Component({
   selector: 'app-purchases-list',
   standalone: true,
-  imports: [FormsModule, RouterLink, Icon, EmptyState],
+  imports: [FormsModule, RouterLink, Icon, EmptyState, DatePipe],
   templateUrl: './purchases-list.html',
   styleUrl: './purchases-list.scss',
 })

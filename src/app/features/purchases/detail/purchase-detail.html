@@ -4,11 +4,7 @@
     <p class="page-subtitle">Serialized units (IMEI/Serial) can be marked returned-to-supplier or damaged individually.</p>
   </div>
   <div class="header-actions">
-    @if (purchase(); as headerP) {
-      @if (!(headerP.items ?? []).some(i => i.stock_status !== 'in_stock')) {
-        <a [routerLink]="['/purchases', purchaseId, 'edit']" class="btn btn-secondary" title="Fix a mistake on this purchase">Edit</a>
-      }
-    }
+    <a [routerLink]="['/purchases', purchaseId, 'edit']" class="btn btn-secondary" title="Fix a mistake, or add a missing item, on this purchase">Edit</a>
     <a routerLink="/purchases" class="btn btn-secondary">Back to list</a>
   </div>
 </div>

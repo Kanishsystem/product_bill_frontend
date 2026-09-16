@@ -29,6 +29,16 @@ import { Icon } from '../../../shared/components/icon/icon';
  * from - see SalesService::buildAllocationRows(). There's no per-line
  * discount or warranty any more (see billWarrantyYears/billWarrantyMonths
  * below) - both are bill-level now. */
+/** One row of a Split Payment entry (iteration log item 62) - `mode` is
+ * always one of cash/upi/card/gpay (never 'emi' or 'split' itself - see
+ * SalesController::SPLIT_COMPONENT_PAYMENT_MODES on the backend).
+ * `amount` mirrors amountPaidText's own string-or-number-or-blank shape
+ * (bound the same way via an ngModel input). */
+interface SplitPaymentRow {
+  mode: PaymentMode;
+  amount: string | number;
+}
+
 interface CartLine {
   key: string;
   productId: number;
@@ -119,6 +129,28 @@ export class Billing implements OnInit {
    * gets recalculated (silently overwriting any manual edit) the next time
    * Initial Payment itself changes. */
   emiAmount: number | null = null;
+
+  /** Only meaningful when paymentMode === 'split' (iteration log item 62) -
+   * the customer paid this one bill across more than one channel at once
+   * (e.g. Cash ₹5,000 + Gpay ₹5,000 + Card ₹5,000 for a ₹15,000 bill).
+   * Only used when creating a NEW bill (setPaymentMode() blocks switching
+   * an existing invoice INTO 'split' during an edit - see save()); each
+   * row becomes its own payment_history entry server-side
+   * (SalesService::create()), same "Recorded at time of sale" note a
+   * plain single-mode sale already gets, just one row per component
+   * instead of one row total. Starts with two blank rows since the whole
+   * point of Split is more than one mode - see setPaymentMode()/
+   * clearBill(). */
+  splitPayments = signal<SplitPaymentRow[]>([
+    { mode: 'cash', amount: '' },
+    { mode: 'gpay', amount: '' },
+  ]);
+
+  /** What a Split row's mode dropdown may offer - deliberately excludes
+   * 'emi' (EMI stays its own whole-bill mode, never mixed into a split)
+   * and every retired/legacy mode, mirroring
+   * SalesController::SPLIT_COMPONENT_PAYMENT_MODES on the backend. */
+  private static readonly SPLIT_MODE_OPTIONS: PaymentMode[] = ['cash', 'upi', 'card', 'gpay'];
 
   showQuickCustomer = signal(false);
   quickCustomerName = '';
@@ -774,12 +806,50 @@ export class Billing implements OnInit {
   /** Switching TO 'emi' auto-fills EMI Amount from whatever's already in
    * Initial Payment, same formula as onAmountPaidChange() below, so
    * arriving at EMI after already typing an amount doesn't leave a
-   * stale/blank EMI Amount behind. */
+   * stale/blank EMI Amount behind. Switching TO 'split' resets the split
+   * rows back to two blank ones whenever they're empty (fresh entry into
+   * Split, or after clearBill()) - clicking Split again while rows are
+   * already filled in leaves them alone. */
   setPaymentMode(mode: PaymentMode): void {
     this.paymentMode = mode;
     if (mode === 'emi' && this.amountPaidEntered()) {
       this.emiAmount = this.balanceDue();
     }
+    if (mode === 'split' && this.splitPayments().length === 0) {
+      this.splitPayments.set([
+        { mode: 'cash', amount: '' },
+        { mode: 'gpay', amount: '' },
+      ]);
+    }
+  }
+
+  /** Adds one more Split row, defaulting its mode to the first of
+   * SPLIT_MODE_OPTIONS not already used by an existing row (falls back to
+   * 'cash' once every option is already in use, though a 4th row would be
+   * unusual - there are only 4 split-eligible modes). */
+  addSplitRow(): void {
+    const used = new Set(this.splitPayments().map((row) => row.mode));
+    const next = Billing.SPLIT_MODE_OPTIONS.find((mode) => !used.has(mode)) ?? 'cash';
+    this.splitPayments.update((rows) => [...rows, { mode: next, amount: '' }]);
+  }
+
+  removeSplitRow(index: number): void {
+    this.splitPayments.update((rows) => rows.filter((_, i) => i !== index));
+  }
+
+  setSplitMode(index: number, mode: PaymentMode): void {
+    this.splitPayments.update((rows) => rows.map((row, i) => (i === index ? { ...row, mode } : row)));
+  }
+
+  setSplitAmount(index: number, amount: string | number | null): void {
+    this.splitPayments.update((rows) => rows.map((row, i) => (i === index ? { ...row, amount: amount ?? '' } : row)));
+  }
+
+  /** Sum of every Split row's amount, ignoring blank/invalid entries - the
+   * same "how much has actually been entered so far" role amountPaidText
+   * plays for every other payment mode (see balanceDue()). */
+  splitTotal(): number {
+    return round2(this.splitPayments().reduce((sum, row) => sum + (Number(row.amount) || 0), 0));
   }
 
   /** The "Cash Received" field doubles as EMI's Initial Payment (same
@@ -827,8 +897,13 @@ export class Billing implements OnInit {
    * this is what silently became a credit/partial-payment sale with no
    * on-screen feedback until now. Applies regardless of payment mode: a
    * partial UPI/Card/Credit amount owes a balance the same way partial cash
-   * does. */
+   * does. For 'split', "what's been entered" is splitTotal() (the sum of
+   * every row) rather than a single Cash Received figure. */
   balanceDue(): number {
+    if (this.paymentMode === 'split') {
+      const due = this.grandTotal() - this.splitTotal();
+      return due > 0 ? round2(due) : 0;
+    }
     if (!this.amountPaidEntered()) return 0;
     const paid = Number(this.amountPaidText) || 0;
     const due = this.grandTotal() - paid;
@@ -855,6 +930,10 @@ export class Billing implements OnInit {
     this.amountPaidText = '';
     this.paymentMode = 'cash';
     this.emiAmount = null;
+    this.splitPayments.set([
+      { mode: 'cash', amount: '' },
+      { mode: 'gpay', amount: '' },
+    ]);
     this.customerId = null;
     this.customerSearch = '';
     const walkIn = this.customers().find((c) => c.name.toLowerCase() === 'walk-in customer');
@@ -885,6 +964,36 @@ export class Billing implements OnInit {
       }
       if (!this.emiAmount || this.emiAmount <= 0) {
         this.toast.error('Enter the EMI Amount for this sale.');
+        return;
+      }
+    }
+    // Split's breakdown is only ever collected when creating a NEW bill - an
+    // already-split invoice keeps passing straight through on edit unchanged
+    // (its breakdown lives only in payment_history, untouched by update() -
+    // same as every other mode), but actively switching a DIFFERENT invoice
+    // INTO 'split' during an edit is blocked, since there'd be no
+    // split_payments to give the server (see SalesController::
+    // validateCreate()'s $isUpdate guard). Requiring at least two non-blank
+    // rows keeps "Split" meaningfully different from just picking one mode
+    // directly; requiring each mode used only once matches
+    // SalesController::SPLIT_COMPONENT_PAYMENT_MODES's own uniqueness check.
+    if (this.paymentMode === 'split' && this.editMode() && this.editOriginalInvoice()?.payment_mode !== 'split') {
+      this.toast.error("Switching to Split Payment isn't supported when editing an existing bill.");
+      return;
+    }
+    if (this.paymentMode === 'split' && !this.editMode()) {
+      const validRows = this.splitPayments().filter((row) => Number(row.amount) > 0);
+      if (validRows.length < 2) {
+        this.toast.error('Enter an amount for at least two payment modes to split this bill.');
+        return;
+      }
+      const modesUsed = new Set(validRows.map((row) => row.mode));
+      if (modesUsed.size !== validRows.length) {
+        this.toast.error('Each payment mode can only be used once in a split payment.');
+        return;
+      }
+      if (this.splitTotal() > this.grandTotal() + 0.01) {
+        this.toast.error('The split payments add up to more than the Grand Total.');
         return;
       }
     }
@@ -947,7 +1056,14 @@ export class Billing implements OnInit {
     if (this.paymentMode === 'emi') {
       payload.emi_amount = this.emiAmount || 0;
     }
-    if (this.amountPaidEntered()) {
+    if (this.paymentMode === 'split') {
+      // Sent instead of amount_paid - the server sums these itself rather
+      // than trust a separately-sent total, so the two can never drift
+      // apart (see SalesService::create()).
+      payload.split_payments = this.splitPayments()
+        .filter((row) => Number(row.amount) > 0)
+        .map((row) => ({ mode: row.mode, amount: Number(row.amount) }));
+    } else if (this.amountPaidEntered()) {
       payload.amount_paid = Number(this.amountPaidText);
     }
 

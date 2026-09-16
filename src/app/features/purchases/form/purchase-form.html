@@ -3,7 +3,7 @@
     <h1>{{ editMode() ? 'Edit Purchase' : 'New Purchase' }}</h1>
     <p class="page-subtitle">
       @if (editMode()) {
-        Fixing a mistake on this purchase? Change the items/supplier/date below and save - the purchase's identity stays the same. This is blocked if any of its stock has already been sold, returned, or marked damaged.
+        Fixing a mistake on this purchase? Change the items/date below and save - the purchase's identity stays the same. A line already marked "Already sold" can't be changed or removed - add a new row instead for that correction.
       } @else {
         Add a product and enter the quantity received - stock is created automatically on save. IMEI/Serial No. (for mobiles, ACs, etc.) is entered later, at the time of sale.
       }
@@ -35,6 +35,8 @@
               (ngModelChange)="onSupplierSearchChange()"
               (focus)="openSupplierDropdown()"
               (blur)="onSupplierBlur()"
+              [disabled]="anyLineLocked()"
+              [title]="anyLineLocked() ? 'Some stock from this purchase has already moved, so the supplier can\'t be changed now.' : ''"
               required
             />
             @if (supplierDropdownOpen()) {
@@ -54,10 +56,13 @@
               </div>
             }
           </div>
-          <button type="button" class="btn-icon-add" title="Add new supplier" (click)="openSupplierModal()">
+          <button type="button" class="btn-icon-add" title="Add new supplier" [disabled]="anyLineLocked()" (click)="openSupplierModal()">
             <app-icon name="plus" [size]="16"></app-icon>
           </button>
         </div>
+        @if (anyLineLocked()) {
+          <p class="field-hint">Some stock from this purchase has already moved, so the supplier can't be changed now.</p>
+        }
       </div>
       <div class="field">
         <label for="purchase_date">Purchase Date <span class="req">*</span></label>
@@ -122,7 +127,7 @@
         </thead>
         <tbody>
           @for (line of lines(); track $index; let i = $index) {
-            <tr>
+            <tr [class.locked-row]="line.locked">
               <td class="col-product">
                 <div class="combo-field combo-with-add">
                   <div class="combo-input-wrap">
@@ -135,6 +140,7 @@
                       (ngModelChange)="onProductSearchChange(line, i)"
                       (focus)="openProductDropdown(i)"
                       (blur)="onProductBlur()"
+                      [disabled]="line.locked"
                       required
                     />
                     @if (isProductDropdownOpen(i)) {
@@ -152,10 +158,18 @@
                       </div>
                     }
                   </div>
-                  <button type="button" class="btn-icon-add" title="Add new product" (click)="openProductModal(i)">
-                    <app-icon name="plus" [size]="16"></app-icon>
-                  </button>
+                  @if (!line.locked) {
+                    <button type="button" class="btn-icon-add" title="Add new product" (click)="openProductModal(i)">
+                      <app-icon name="plus" [size]="16"></app-icon>
+                    </button>
+                  }
                 </div>
+                @if (line.locked) {
+                  <span class="locked-badge" title="Already sold or adjusted from this purchase - can't be changed or removed. Add a new row instead for a correction.">
+                    <app-icon name="lock" [size]="12"></app-icon>
+                    Already sold
+                  </span>
+                }
               </td>
               <td class="col-variant">
                 <span class="variant-value">{{ line.product?.brand_name || '—' }}</span>
@@ -171,12 +185,13 @@
                     step="1"
                     [(ngModel)]="line.quantity"
                     [name]="'quantity_' + i"
+                    [disabled]="line.locked"
                     required
                   />
                 }
               </td>
               <td class="col-unit">
-                <input type="text" class="cell-input" [(ngModel)]="line.unit" [name]="'unit_' + i" />
+                <input type="text" class="cell-input" [(ngModel)]="line.unit" [name]="'unit_' + i" [disabled]="line.locked" />
               </td>
               <td class="col-money">
                 <input
@@ -186,6 +201,7 @@
                   step="0.01"
                   [(ngModel)]="line.rate"
                   [name]="'rate_' + i"
+                  [disabled]="line.locked"
                   required
                 />
               </td>
@@ -206,6 +222,7 @@
                   step="0.01"
                   [(ngModel)]="line.gstRate"
                   [name]="'gst_' + i"
+                  [disabled]="line.locked"
                 />
               </td>
               <td class="col-money">
@@ -215,15 +232,17 @@
                 <span class="computed-value computed-strong">₹{{ lineEstimatedTotal(line) | number: '1.2-2' }}</span>
               </td>
               <td class="col-action">
-                <button
-                  type="button"
-                  class="icon-link danger"
-                  title="Remove line"
-                  [disabled]="lines().length === 1"
-                  (click)="removeLine(i)"
-                >
-                  <app-icon name="trash" [size]="16"></app-icon>
-                </button>
+                @if (!line.locked) {
+                  <button
+                    type="button"
+                    class="icon-link danger"
+                    title="Remove line"
+                    [disabled]="lines().length === 1"
+                    (click)="removeLine(i)"
+                  >
+                    <app-icon name="trash" [size]="16"></app-icon>
+                  </button>
+                }
               </td>
             </tr>
             @if (line.units.length > 0) {
@@ -232,16 +251,18 @@
                   <div class="unit-editor">
                     <div class="unit-editor-header">
                       <span>IMEI units ({{ line.units.length }})</span>
-                      <button type="button" class="btn btn-secondary btn-sm" (click)="addUnit(line)">
-                        <app-icon name="plus" [size]="14"></app-icon>
-                        Add unit
-                      </button>
+                      @if (!line.locked) {
+                        <button type="button" class="btn btn-secondary btn-sm" (click)="addUnit(line)">
+                          <app-icon name="plus" [size]="14"></app-icon>
+                          Add unit
+                        </button>
+                      }
                     </div>
                     @for (unit of line.units; track $index; let ui = $index) {
                       <div class="unit-row">
-                        <input type="text" placeholder="IMEI 1 (required)" [(ngModel)]="unit.imei1" [name]="'imei1_' + i + '_' + ui" required />
-                        <input type="text" placeholder="IMEI 2 (optional)" [(ngModel)]="unit.imei2" [name]="'imei2_' + i + '_' + ui" />
-                        @if (line.units.length > 1) {
+                        <input type="text" placeholder="IMEI 1 (required)" [(ngModel)]="unit.imei1" [name]="'imei1_' + i + '_' + ui" [disabled]="line.locked" required />
+                        <input type="text" placeholder="IMEI 2 (optional)" [(ngModel)]="unit.imei2" [name]="'imei2_' + i + '_' + ui" [disabled]="line.locked" />
+                        @if (line.units.length > 1 && !line.locked) {
                           <button type="button" class="icon-link danger" title="Remove unit" (click)="removeUnit(line, ui)">
                             <app-icon name="trash" [size]="14"></app-icon>
                           </button>
@@ -257,10 +278,12 @@
                   <div class="unit-editor">
                     <div class="unit-editor-header">
                       <span>Serial numbers ({{ line.serials.length }})</span>
-                      <button type="button" class="btn btn-secondary btn-sm" (click)="addSerial(line)">
-                        <app-icon name="plus" [size]="14"></app-icon>
-                        Add unit
-                      </button>
+                      @if (!line.locked) {
+                        <button type="button" class="btn btn-secondary btn-sm" (click)="addSerial(line)">
+                          <app-icon name="plus" [size]="14"></app-icon>
+                          Add unit
+                        </button>
+                      }
                     </div>
                     @for (serial of line.serials; track $index; let si = $index) {
                       <div class="unit-row">
@@ -270,9 +293,10 @@
                           [ngModel]="serial"
                           (ngModelChange)="line.serials[si] = $event"
                           [name]="'serial_' + i + '_' + si"
+                          [disabled]="line.locked"
                           required
                         />
-                        @if (line.serials.length > 1) {
+                        @if (line.serials.length > 1 && !line.locked) {
                           <button type="button" class="icon-link danger" title="Remove" (click)="removeSerial(line, si)">
                             <app-icon name="trash" [size]="14"></app-icon>
                           </button>

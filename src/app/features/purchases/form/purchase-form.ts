@@ -43,6 +43,19 @@ interface LineDraft {
   units: { imei1: string; imei2: string }[];
   serials: string[];
   quantity: number;
+  /** The purchase_item id this line was loaded from, when editing (a plain
+   * quantity line) - null for a brand-new line added during this edit, or
+   * when creating a fresh purchase. Mutually exclusive with existingIds. */
+  existingId: number | null;
+  /** Same idea, for a legacy grouped multi-unit line (one id per unit/
+   * serial, same order as `units`/`serials`) - see mapItemsToLines(). */
+  existingIds: number[] | null;
+  /** True once ANY unit/batch quantity this line brought into stock has
+   * already been sold/returned/damaged (or partially drawn down) - the
+   * fields below are then shown read-only and can't be saved changed; see
+   * PurchaseService::update()'s doc comment for why. Always false for a
+   * brand-new line. */
+  locked: boolean;
 }
 
 @Component({
@@ -215,12 +228,6 @@ export class PurchaseForm implements OnInit {
           this.toast.error('This purchase could not be found.');
           return;
         }
-        const anyMoved = (purchase.items ?? []).some((i) => i.stock_status !== 'in_stock');
-        if (anyMoved) {
-          this.toast.error(
-            "Some stock from this purchase has already moved (sold/returned/damaged) - saving changes here may be blocked. Record a correction purchase instead if that happens.",
-          );
-        }
         this.editOriginalPurchase.set(purchase);
         this.form = {
           supplier_id: purchase.supplier_id,
@@ -239,18 +246,44 @@ export class PurchaseForm implements OnInit {
     });
   }
 
+  /** Mirrors PurchaseService::purchaseLineHasMoved(): checked first (and
+   * permanently) is whether any sale has EVER referenced this line's stock
+   * - a sale return restores stock_status/quantity back to normal but never
+   * deletes the sale record it created, so a fully-returned line can look
+   * completely untouched below while still being locked. Otherwise, a
+   * serialized unit no longer in_stock, or a batch row whose remaining
+   * stock_quantity no longer matches what this line originally purchased (a
+   * PARTIAL sale - stock_status alone stays 'in_stock' for that case, so
+   * stock_quantity is what actually catches it). */
+  private itemHasMoved(item: PurchaseItem): boolean {
+    if (item.stock_item_id === null) return false;
+    // Explicit numeric/boolean check, not raw truthiness - has_sale_history
+    // can arrive as the JSON boolean `false`, or (depending on the backend's
+    // PDO driver/config) the string "0", which JS treats as truthy (only ""
+    // is falsy). A bare `if (item.has_sale_history)` there made every line
+    // - including a brand-new, never-sold one - look already-sold on setups
+    // where that happened. See PurchaseService::get()'s matching fix.
+    if (item.has_sale_history === true || Number(item.has_sale_history) === 1) return true;
+    const isSerialized = !!item.imei1 || !!item.serial_no;
+    if (isSerialized) return item.stock_status !== 'in_stock';
+    return item.stock_status !== 'in_stock' || Number(item.stock_quantity) !== Number(item.quantity);
+  }
+
   private mapItemsToLines(items: PurchaseItem[]): LineDraft[] {
     const lines: LineDraft[] = [];
     for (const item of items) {
       const isImei = !!item.imei1;
       const isSerial = !isImei && !!item.serial_no;
+      const moved = this.itemHasMoved(item);
       const last = lines[lines.length - 1];
-      if (last && last.productId === item.product_id && (isImei || isSerial)) {
+      if (last && last.productId === item.product_id && (isImei || isSerial) && last.existingIds) {
         if (isImei) {
           last.units = [...last.units, { imei1: item.imei1 ?? '', imei2: item.imei2 ?? '' }];
         } else {
           last.serials = [...last.serials, item.serial_no ?? ''];
         }
+        last.existingIds = [...last.existingIds, item.id];
+        last.locked = last.locked || moved;
         continue;
       }
       const product = this.products().find((p) => p.id === item.product_id) ?? null;
@@ -266,9 +299,21 @@ export class PurchaseForm implements OnInit {
         units: isImei ? [{ imei1: item.imei1 ?? '', imei2: item.imei2 ?? '' }] : [],
         serials: isSerial ? [item.serial_no ?? ''] : [],
         quantity: isImei || isSerial ? 1 : Number(item.quantity) || 1,
+        existingId: isImei || isSerial ? null : item.id,
+        existingIds: isImei || isSerial ? [item.id] : null,
+        locked: moved,
       });
     }
     return lines.length > 0 ? lines : [this.blankLine()];
+  }
+
+  /** True once any line on this purchase already has stock sold/adjusted -
+   * the Supplier field is disabled in that case (see save()/validate()'s
+   * reasoning: a locked line's tax split is recomputed from the ORIGINAL
+   * supplier's state, so changing suppliers now would mix two tax splits
+   * under one purchase). Always false outside edit mode. */
+  anyLineLocked(): boolean {
+    return this.editMode() && this.lines().some((l) => l.locked);
   }
 
   /** Ex-GST cost derived from the Add Product modal's GST-inclusive Purchase
@@ -620,6 +665,9 @@ export class PurchaseForm implements OnInit {
       units: [],
       serials: [],
       quantity: 1,
+      existingId: null,
+      existingIds: null,
+      locked: false,
     };
   }
 
@@ -628,10 +676,16 @@ export class PurchaseForm implements OnInit {
   }
 
   removeLine(index: number): void {
+    const line = this.lines()[index];
+    if (line?.locked) {
+      this.toast.error("This line already has stock sold or adjusted from this purchase, so it can't be removed - add a new line instead for the correction.");
+      return;
+    }
     this.lines.update((rows) => rows.filter((_, i) => i !== index));
   }
 
   onProductChange(line: LineDraft): void {
+    if (line.locked) return;
     const product = this.products().find((p) => p.id === line.productId) ?? null;
     line.product = product;
     if (!product) return;
@@ -653,18 +707,22 @@ export class PurchaseForm implements OnInit {
   }
 
   addUnit(line: LineDraft): void {
+    if (line.locked) return;
     line.units = [...line.units, { imei1: '', imei2: '' }];
   }
 
   removeUnit(line: LineDraft, index: number): void {
+    if (line.locked) return;
     line.units = line.units.filter((_, i) => i !== index);
   }
 
   addSerial(line: LineDraft): void {
+    if (line.locked) return;
     line.serials = [...line.serials, ''];
   }
 
   removeSerial(line: LineDraft, index: number): void {
+    if (line.locked) return;
     line.serials = line.serials.filter((_, i) => i !== index);
   }
 
@@ -794,10 +852,23 @@ export class PurchaseForm implements OnInit {
       } else {
         item.quantity = line.quantity;
       }
+      // Ties this line back to the purchase_item(s) it was loaded from, so
+      // the server can tell "unchanged locked line" from "brand-new line"
+      // from "edited unmoved line" - see PurchaseService::update(). A
+      // brand-new line added during this edit has neither, and is always
+      // insertable regardless of what else on this purchase has moved.
+      if (this.editMode()) {
+        if (line.existingId !== null) item.id = line.existingId;
+        else if (line.existingIds !== null) item.ids = line.existingIds;
+      }
       return item;
     });
 
     if (this.editMode() && this.editPurchaseId) {
+      if (this.anyLineLocked() && this.form.supplier_id !== this.editOriginalPurchase()?.supplier_id) {
+        this.toast.error("Some stock from this purchase has already moved, so the supplier can't be changed now.");
+        return;
+      }
       const updatePayload: PurchaseUpdateInput = {
         id: this.editPurchaseId,
         supplier_id: this.form.supplier_id as number,

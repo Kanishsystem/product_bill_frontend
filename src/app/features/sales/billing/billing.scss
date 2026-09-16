@@ -720,6 +720,33 @@
   }
 }
 
+.split-payments {
+  margin-top: -0.2rem;
+
+  .field-hint {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.split-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+
+  select {
+    flex: 0 0 6rem;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 .change-due {
   font-size: 0.88rem;
   color: var(--text-muted);

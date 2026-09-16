@@ -342,30 +342,62 @@
 
     <div class="payment-modes">
       <button type="button" class="mode-btn" [class.active]="paymentMode === 'cash'" (click)="setPaymentMode('cash')">Cash</button>
-      <button type="button" class="mode-btn" [class.active]="paymentMode === 'gpay'" (click)="setPaymentMode('gpay')">Gpay</button>
       <button type="button" class="mode-btn" [class.active]="paymentMode === 'upi'" (click)="setPaymentMode('upi')">UPI</button>
-      
-      <button type="button" class="mode-btn" [class.active]="paymentMode === 'emi'" (click)="setPaymentMode('emi')">EMI</button>
       <button type="button" class="mode-btn" [class.active]="paymentMode === 'card'" (click)="setPaymentMode('card')">Card</button>
+      <button type="button" class="mode-btn" [class.active]="paymentMode === 'emi'" (click)="setPaymentMode('emi')">EMI</button>
+      <button type="button" class="mode-btn" [class.active]="paymentMode === 'gpay'" (click)="setPaymentMode('gpay')">Gpay</button>
+      <button type="button" class="mode-btn" [class.active]="paymentMode === 'split'" (click)="setPaymentMode('split')">Split</button>
     </div>
 
     @if (!editMode()) {
-      <div class="field cash-received-field">
-        <label>{{ amountPaidLabel() }}</label>
-        <div class="amount-paid-row">
-          <input type="number" min="0" step="0.01" [ngModel]="amountPaidText" (ngModelChange)="onAmountPaidChange($event)" placeholder="Amount" />
-          <button type="button" class="btn btn-secondary btn-sm" (click)="useFullAmount()">Full</button>
+      @if (paymentMode !== 'split') {
+        <div class="field cash-received-field">
+          <label>{{ amountPaidLabel() }}</label>
+          <div class="amount-paid-row">
+            <input type="number" min="0" step="0.01" [ngModel]="amountPaidText" (ngModelChange)="onAmountPaidChange($event)" placeholder="Full amount" />
+            <button type="button" class="btn btn-secondary btn-sm" (click)="useFullAmount()">Full</button>
+          </div>
         </div>
-      </div>
-      @if (paymentMode === 'emi') {
-        <div class="field emi-amount-field">
-          <label>EMI Amount (₹)</label>
-          <input type="number" min="0" step="0.01" [(ngModel)]="emiAmount" placeholder="Auto-calculated" />
-          <span class="field-hint">Auto-filled as Grand Total − Initial Payment — adjust if needed.</span>
+        @if (paymentMode === 'emi') {
+          <div class="field emi-amount-field">
+            <label>EMI Amount (₹)</label>
+            <input type="number" min="0" step="0.01" [(ngModel)]="emiAmount" placeholder="Auto-calculated" />
+            <span class="field-hint">Auto-filled as Grand Total − Initial Payment — adjust if needed.</span>
+          </div>
+        }
+        @if (paymentMode === 'cash' && changeDue() > 0) {
+          <div class="change-due">Change due: <strong>₹{{ changeDue() | number: '1.2-2' }}</strong></div>
+        }
+      } @else {
+        <div class="field split-payments">
+          <label>Split Payment</label>
+          @for (row of splitPayments(); track $index; let i = $index) {
+            <div class="split-row">
+              <select [ngModel]="row.mode" (ngModelChange)="setSplitMode(i, $event)" [name]="'split_mode_' + i">
+                <option value="cash">Cash</option>
+                <option value="upi">UPI</option>
+                <option value="card">Card</option>
+                <option value="gpay">Gpay</option>
+              </select>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                [ngModel]="row.amount"
+                (ngModelChange)="setSplitAmount(i, $event)"
+                [name]="'split_amount_' + i"
+                placeholder="Amount"
+              />
+              @if (splitPayments().length > 1) {
+                <button type="button" class="icon-link danger" title="Remove" (click)="removeSplitRow(i)">
+                  <app-icon name="trash" [size]="14"></app-icon>
+                </button>
+              }
+            </div>
+          }
+          <button type="button" class="btn btn-secondary btn-sm" (click)="addSplitRow()">+ Add payment mode</button>
+          <span class="field-hint">Entered: ₹{{ splitTotal() | number: '1.2-2' }} of ₹{{ grandTotal() | number: '1.2-2' }}</span>
         </div>
-      }
-      @if (paymentMode === 'cash' && changeDue() > 0) {
-        <div class="change-due">Change due: <strong>₹{{ changeDue() | number: '1.2-2' }}</strong></div>
       }
       @if (balanceDue() > 0) {
         <div class="balance-due-note">
@@ -373,6 +405,8 @@
           <span>
             @if (paymentMode === 'emi') {
               This bill will be saved as an EMI sale — the customer will still owe this amount beyond the initial payment.
+            } @else if (paymentMode === 'split') {
+              This bill will be saved as a split payment with a remaining balance — the customer will still owe this amount.
             } @else {
               This bill will be saved as a credit sale — the customer will still owe this amount.
             }

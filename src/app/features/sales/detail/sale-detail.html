@@ -212,10 +212,22 @@
           <span>Round Off :</span>
           <span>₹{{ num(inv.round_off) | number: '1.2-2' }}</span>
         </div>
-        <div class="grand-row">
-          <span>Paid :</span>
-          <span>₹{{ num(inv.amount_paid) | number: '1.2-2' }}</span>
-        </div>
+        @if (inv.payment_mode === 'split' && inv.split_payments?.length) {
+          <!-- One row per channel instead of one "Paid" total (item 62) -
+               the whole point of a split bill is seeing Cash/Gpay/Card etc.
+               broken out, not lumped back into a single figure. -->
+          @for (sp of inv.split_payments; track sp.payment_mode) {
+            <div class="grand-row">
+              <span>{{ sp.payment_mode.replaceAll('_', ' ') | titlecase }} :</span>
+              <span>₹{{ num(sp.amount) | number: '1.2-2' }}</span>
+            </div>
+          }
+        } @else {
+          <div class="grand-row">
+            <span>Paid :</span>
+            <span>₹{{ num(inv.amount_paid) | number: '1.2-2' }}</span>
+          </div>
+        }
         @if (inv.payment_mode === 'emi' && num(inv.emi_amount) > 0) {
           <div class="grand-row">
             <span>EMI Amount :</span>

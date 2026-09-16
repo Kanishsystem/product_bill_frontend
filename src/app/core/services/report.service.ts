@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { ApiResponse } from '../models/pagination.model';
 import {
+  CollectionReport,
   DashboardData,
   GstReport,
   ProfitReport,
@@ -37,5 +38,9 @@ export class ReportService {
 
   gst(filters?: { from_date?: string; to_date?: string }) {
     return this.api.get<ApiResponse<GstReport>>('reports/gst', filters);
+  }
+
+  collection(filters?: { from_date?: string; to_date?: string }) {
+    return this.api.get<ApiResponse<CollectionReport>>('reports/collection', filters);
   }
 }

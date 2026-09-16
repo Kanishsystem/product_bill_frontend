@@ -10,7 +10,24 @@
 // for a NEW bill (credit/other/cash_in_hand stay in this union, and stay
 // fully supported for reading/editing/printing/reporting, purely because
 // an older invoice may already have been saved with one of them).
-export type PaymentMode = 'cash' | 'card' | 'upi' | 'credit' | 'other' | 'cash_in_hand' | 'emi' | 'gpay';
+//
+// 'split' (iteration log item 62) is one bill paid across more than one of
+// cash/upi/card/gpay at once (e.g. Cash 5000 + Gpay 5000 + Card 5000 for a
+// 15000 bill) - see SalesCreateInput.split_payments and
+// SalesInvoice.split_payments. Only offered when creating a NEW bill (same
+// as every mode listed here except the three retired ones above); EMI is
+// deliberately never one of a split's components - choosing EMI stays a
+// single whole-bill mode of its own.
+export type PaymentMode = 'cash' | 'card' | 'upi' | 'credit' | 'other' | 'cash_in_hand' | 'emi' | 'gpay' | 'split';
+
+/** One component of a split payment - see PaymentMode's 'split' doc comment.
+ * `mode` is always one of cash/upi/card/gpay (never 'emi' or 'split'
+ * itself - enforced server-side by SalesController's
+ * SPLIT_COMPONENT_PAYMENT_MODES allowlist). */
+export interface SplitPaymentInput {
+  mode: PaymentMode;
+  amount: number;
+}
 export type SalesInvoiceStatus = 'completed' | 'partially_returned' | 'returned' | 'cancelled';
 export type TaxType = 'CGST_SGST' | 'IGST';
 
@@ -71,6 +88,12 @@ export interface SalesInvoice {
   refund_due?: number | string;
   status: SalesInvoiceStatus;
   items?: SalesInvoiceItem[];
+  /** Only ever present when payment_mode is 'split' - the components this
+   * bill was actually paid with (e.g. [{payment_mode:'cash',amount:5000},
+   * {payment_mode:'gpay',amount:5000},{payment_mode:'card',amount:5000}]),
+   * read back from payment_history's "Recorded at time of sale" rows (see
+   * SalesService::get()). Undefined/absent for every other payment_mode. */
+  split_payments?: { payment_mode: PaymentMode; amount: number | string }[];
 }
 
 export interface SalesItemInput {
@@ -101,6 +124,12 @@ export interface SalesCreateInput {
   /** Required by the server when payment_mode is 'emi' - see
    * SalesController::validateCreate(). Ignored otherwise. */
   emi_amount?: number;
+  /** Required (at least 2 entries) when payment_mode is 'split' - see
+   * SalesController::validateCreate() and PaymentMode's 'split' doc comment.
+   * Ignored otherwise; only ever sent when creating a NEW bill, never on an
+   * update (see SalesUpdateInput - editing never resends/changes a split's
+   * breakdown, same rule as amount_paid itself). */
+  split_payments?: SplitPaymentInput[];
   amount_paid?: number;
   bill_discount_percent?: number;
   items: SalesItemInput[];

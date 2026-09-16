@@ -338,6 +338,27 @@
   border-bottom: 1px solid var(--border);
 }
 
+// A row whose stock has already sold/moved - frozen, can't be edited or
+// removed (see purchase-form.ts's `locked` on LineDraft). A quiet tint
+// rather than a loud one, since this isn't an error - just history.
+.locked-row {
+  background: var(--warning-light);
+}
+
+.locked-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--warning-light);
+  color: var(--warning);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: help;
+}
+
 .unit-editor {
   padding: 0.9rem 1rem;
   background: var(--bg-app);

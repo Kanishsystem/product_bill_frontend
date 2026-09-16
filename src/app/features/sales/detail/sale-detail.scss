@@ -172,23 +172,28 @@
   }
 
   .col-sno {
-    width: 5%;
+    width: 4%;
   }
 
+  // Client asked for more room for Item Particulars (product name + HSN/S-N
+  // meta line) - widened again from 42%, taking a point each off SNo, Rate,
+  // Qty and GST % (Amount is left alone - it needs to hold the largest
+  // realistic figures on the bill and was already the tightest of the
+  // number columns).
   .col-particulars {
-    width: 42%;
+    width: 46%;
   }
 
   .col-rate {
-    width: 13%;
+    width: 12%;
   }
 
   .col-qty {
-    width: 11%;
+    width: 10%;
   }
 
   .col-gst {
-    width: 7%;
+    width: 6%;
   }
 
   .col-amount {
@@ -628,7 +633,7 @@
     // .no-print rule removes it from the column layout), so its 4% comes
     // back to Item Particulars here instead of going unused.
     .col-particulars {
-      width: 46%;
+      width: 50%;
     }
 
     th,

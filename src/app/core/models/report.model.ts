@@ -153,3 +153,28 @@ export interface GstReport {
   from_date: string;
   to_date: string;
 }
+
+/** One calendar day's collection, broken out per payment mode - `amounts` has
+ * exactly the keys listed in CollectionReport.modes (only modes actually seen
+ * in range appear at all - see ReportService::collectionReport()). Sourced
+ * from every payment_history row on that day (not just the ones seeded at
+ * sale time), so this reflects money actually received that day, including a
+ * later Record Payment against a Credit/EMI balance. */
+export interface CollectionReportDay {
+  date: string;
+  amounts: Record<string, number | string>;
+  total: number | string;
+}
+
+export interface CollectionReport {
+  /** Payment modes present anywhere in range, in a fixed reading order (cash,
+   * upi, gpay, card, emi, credit, cash_in_hand, other) - never includes the
+   * literal string 'split', since payment_history only ever stores a split
+   * bill's real component modes. */
+  modes: string[];
+  days: CollectionReportDay[];
+  mode_totals: Record<string, number | string>;
+  grand_total: number | string;
+  from_date: string;
+  to_date: string;
+}

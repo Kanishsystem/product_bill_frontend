@@ -151,6 +151,18 @@
   padding: 1.2rem;
 }
 
+/* Collection Report's per-day pivot table footer - the running totals row
+   under the day-by-day breakdown, set apart the same way a spreadsheet's
+   totals row usually is. */
+.totals-row {
+  font-weight: 700;
+
+  td {
+    border-top: 2px solid var(--border);
+    border-bottom: none;
+  }
+}
+
 .row-cancelled {
   opacity: 0.6;
 

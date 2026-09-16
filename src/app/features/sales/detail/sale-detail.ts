@@ -1,5 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe, TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { SalesService } from '../../../core/services/sales.service';
@@ -26,7 +26,7 @@ interface GstBreakdownRow {
 @Component({
   selector: 'app-sale-detail',
   standalone: true,
-  imports: [RouterLink, DecimalPipe, DatePipe, FormsModule],
+  imports: [RouterLink, DecimalPipe, DatePipe, TitleCasePipe, FormsModule],
   templateUrl: './sale-detail.html',
   styleUrl: './sale-detail.scss',
 })
@@ -140,21 +140,15 @@ export class SaleDetail implements OnInit {
   }
 
   /** How many blank "lines" of empty space to pad the printed items table
-   * with, matching the shop's old pre-printed bill book - a fixed amount of
-   * blank space below the items regardless of how many are actually on the
-   * bill (a 1-2 item invoice would otherwise leave the item table tiny and
-   * the whole printed page looking mostly empty below it), rendered as ONE
-   * plain empty area (no row/column grid lines through it, just the table's
-   * own outer border) rather than a separate ruled row per blank line - the
-   * shop's own old bill shows a blank rectangle, not an empty grid. Only
-   * rendered on paper (see .blank-item-row's print-only display in
-   * sale-detail.scss) - the on-screen view stays exactly as many rows as
-   * there are real items. Never adds anything once an invoice already has
-   * the max 5 items (see Billing.MAX_CART_LINES), so this can't undo the
-   * one-page print guarantee that cap exists for. MIN_PRINTED_ITEM_ROWS is a
-   * fixed constant rather than a Settings field for now - ask if the shop
-   * wants more/fewer blank lines than this. */
-  private static readonly MIN_PRINTED_ITEM_ROWS = 5;
+   * with - previously matched the shop's old pre-printed bill book by always
+   * padding out to 5 rows, but the client asked for that bottom space gone
+   * (a 1-2 item bill was leaving a large empty block below the items table),
+   * so this is 0 for now: a short bill's printed items table is exactly as
+   * tall as its real items, nothing padded underneath. Left as a named
+   * constant (not deleted outright, and blankRowCount()/.blank-item-row
+   * below are both left in place) so the old bill-book look is one number
+   * away from coming back if the client changes their mind again. */
+  private static readonly MIN_PRINTED_ITEM_ROWS = 0;
 
   blankRowCount(): number {
     const count = (this.invoice()?.items ?? []).length;

@@ -21,6 +21,21 @@ export interface PurchaseItem {
   serial_no: string | null;
   stock_item_id: number | null;
   stock_status: 'in_stock' | 'sold' | 'returned' | 'damaged' | null;
+  /** Current remaining quantity on this line's linked stock_items row - only
+   * meaningful for a plain-quantity (non-serialized) batch line. Compared
+   * against this row's own `quantity` (what was originally purchased) to
+   * detect a PARTIAL draw-down (some, but not all, of the batch already
+   * sold) - `stock_status` alone stays 'in_stock' in that case, so this is
+   * what actually tells the purchase-edit screen a line is locked. See
+   * PurchaseService::purchaseLineHasMoved(). */
+  stock_quantity: number | string | null;
+  /** True once ANY sales_invoice_items row has ever referenced this line's
+   * stock_item, even one since fully returned - a sale return restores
+   * stock_status/stock_quantity back to normal but never deletes the sale
+   * record it created, so this is checked before (and regardless of)
+   * stock_status/stock_quantity below. See
+   * PurchaseService::purchaseLineHasMoved()'s doc comment. */
+  has_sale_history: boolean | number | string;
 }
 
 export interface Purchase {
@@ -60,6 +75,13 @@ export interface PurchaseItemInput {
   units?: PurchaseUnitInput[];
   serials?: string[];
   quantity?: number;
+  /** Update only: the purchase_item id this line was loaded from (a plain
+   * quantity line), or `ids` for a legacy grouped multi-unit line (one id
+   * per unit/serial, same order). Omitted entirely for a brand-new line
+   * added during this edit - see PurchaseService::update(). Never sent on
+   * create(). */
+  id?: number;
+  ids?: number[];
 }
 
 export interface PurchaseCreateInput {
@@ -74,9 +96,11 @@ export interface PurchaseCreateInput {
 /** Same shape as PurchaseCreateInput, minus amount_paid - editing a purchase
  * never touches amount_paid (managed only via the initial create() seed and
  * PurchaseService.recordPayment()); the server recomputes balance_due
- * against the possibly-changed total instead. Blocked server-side if any
- * unit this purchase brought into stock has already been sold/returned/
- * damaged - see PurchaseService::update(). */
+ * against the possibly-changed total instead. Per-line, not all-or-nothing:
+ * a line whose stock already moved (sold/returned/damaged) must be resent
+ * unchanged (its `id`/`ids` + identical fields) or the whole save is
+ * rejected, but unmoved lines can be freely edited/removed and brand-new
+ * lines (no `id`/`ids`) can always be added - see PurchaseService::update(). */
 export interface PurchaseUpdateInput {
   id: number;
   supplier_id: number;

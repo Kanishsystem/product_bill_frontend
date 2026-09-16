@@ -7,6 +7,7 @@ import { ReportService } from '../../core/services/report.service';
 import { ToastService } from '../../core/services/toast.service';
 import { extractErrorMessage } from '../../core/utils/http-error';
 import {
+  CollectionReport,
   GstReport,
   ProfitReport,
   PurchaseReport,
@@ -16,7 +17,7 @@ import {
   StockValuationReport,
 } from '../../core/models/report.model';
 
-type ReportTab = 'sales' | 'purchases' | 'stock-valuation' | 'profit' | 'gst';
+type ReportTab = 'sales' | 'purchases' | 'stock-valuation' | 'profit' | 'gst' | 'collection';
 
 /** One printable/exportable block - a heading plus a plain table of strings.
  * buildExportSections() turns whichever report tab is active into a list of
@@ -35,6 +36,22 @@ const TAB_LABELS: Record<ReportTab, string> = {
   'stock-valuation': 'Stock Valuation Report',
   profit: 'Profit Report',
   gst: 'GST Report',
+  collection: 'Collection Report',
+};
+
+/** Display label for each payment mode column in the Collection Report - same
+ * "replace underscore, then titlecase in the template" treatment every other
+ * payment-mode label in this app gets, kept here as a lookup so the table
+ * header and the export header always agree. */
+const MODE_LABELS: Record<string, string> = {
+  cash: 'Cash',
+  upi: 'UPI',
+  gpay: 'Gpay',
+  card: 'Card',
+  emi: 'EMI',
+  credit: 'Credit',
+  cash_in_hand: 'Cash in Hand',
+  other: 'Other',
 };
 
 @Component({
@@ -64,6 +81,7 @@ export class Reports implements OnInit {
   stockValuation = signal<StockValuationReport | null>(null);
   profitReport = signal<ProfitReport | null>(null);
   gstReport = signal<GstReport | null>(null);
+  collectionReport = signal<CollectionReport | null>(null);
 
   constructor(
     private reportService: ReportService,
@@ -129,7 +147,23 @@ export class Reports implements OnInit {
           error: (err) => this.fail(err),
         });
         break;
+      case 'collection':
+        this.reportService.collection(filters).subscribe({
+          next: (res) => {
+            this.collectionReport.set(res.data ?? null);
+            this.loading.set(false);
+          },
+          error: (err) => this.fail(err),
+        });
+        break;
     }
+  }
+
+  /** Template-facing label for a Collection Report mode column - falls back
+   * to the same underscore-strip-and-titlecase every other mode label in this
+   * app gets, in case a future mode isn't in MODE_LABELS yet. */
+  modeColumnLabel(mode: string): string {
+    return MODE_LABELS[mode] ?? this.modeLabel(mode);
   }
 
   filterInvoicesByMode(invoices: SalesReportInvoiceRow[]): SalesReportInvoiceRow[] {
@@ -172,69 +206,96 @@ export class Reports implements OnInit {
         // because the earlier version's download bundled all four sections
         // together. Respects the same payment-mode filter the on-screen
         // table does, so downloading after filtering to "EMI" exports only
-        // those invoices.
+        // those invoices. A Grand Total row is still appended below the
+        // detail rows - it uses r.summary (the same server-computed,
+        // cancelled-excluded figures the Summary cards above show), not a
+        // re-sum of the (possibly mode-filtered) rows above it, so it always
+        // answers "what did this whole period actually total" regardless of
+        // which mode is being viewed.
+        const invoiceRows = this.filterInvoicesByMode(r.invoices).map((inv) => [
+          inv.invoice_no,
+          this.ddmmyyyy(inv.invoice_date),
+          inv.customer_name,
+          inv.customer_phone || '-',
+          this.money(inv.taxable_amount),
+          this.money(inv.gst),
+          this.money(inv.total_amount),
+          this.modeLabel(inv.payment_mode),
+          inv.payment_mode === 'emi' ? this.money(inv.emi_amount) : '-',
+          inv.status,
+        ]);
+        invoiceRows.push([
+          'Grand Total',
+          '',
+          '',
+          '',
+          this.money(r.summary.taxable),
+          this.money(r.summary.gst),
+          this.money(r.summary.total),
+          '',
+          '',
+          '',
+        ]);
         return [
           {
             title: 'All Invoices in this Period',
             head: ['Invoice No', 'Date', 'Customer', 'Mobile', 'Taxable', 'GST', 'Total', 'Payment Mode', 'EMI Amount', 'Status'],
-            rows: this.filterInvoicesByMode(r.invoices).map((inv) => [
-              inv.invoice_no,
-              this.ddmmyyyy(inv.invoice_date),
-              inv.customer_name,
-              inv.customer_phone || '-',
-              this.money(inv.taxable_amount),
-              this.money(inv.gst),
-              this.money(inv.total_amount),
-              this.modeLabel(inv.payment_mode),
-              inv.payment_mode === 'emi' ? this.money(inv.emi_amount) : '-',
-              inv.status,
-            ]),
+            rows: invoiceRows,
           },
         ];
       }
       case 'purchases': {
         const r = this.purchaseReport();
         if (!r) return [];
-        // Just the per-purchase detail rows - same "details only" scope as
-        // the Sales tab above, no separate Summary card in the export.
+        // Per-purchase detail rows, plus a Grand Total row (from r.summary,
+        // the same cancelled-excluded figures behind the cards above).
+        const purchaseRows = r.rows.map((row) => [
+          this.ddmmyyyy(row.purchase_date),
+          row.supplier_name,
+          row.supplier_invoice_no,
+          row.tax_type === 'IGST' ? 'IGST' : 'CGST+SGST',
+          this.money(row.total_amount),
+        ]);
+        purchaseRows.push(['Grand Total', '', '', '', this.money(r.summary.total)]);
         return [
           {
             title: 'Purchases in this Period',
             head: ['Date', 'Supplier', 'Invoice No', 'Tax', 'Total'],
-            rows: r.rows.map((row) => [
-              this.ddmmyyyy(row.purchase_date),
-              row.supplier_name,
-              row.supplier_invoice_no,
-              row.tax_type === 'IGST' ? 'IGST' : 'CGST+SGST',
-              this.money(row.total_amount),
-            ]),
+            rows: purchaseRows,
           },
         ];
       }
       case 'stock-valuation': {
         const r = this.stockValuation();
         if (!r) return [];
-        // Per-product detail rows only - the single Total Stock Value card
-        // isn't a "detail" and is dropped from the export for the same
-        // reason as the other tabs.
+        // Per-product detail rows, plus a Grand Total row for Stock Value
+        // (matching the Total Stock Value card above) - On Hand isn't
+        // summed since a total unit count across different products isn't
+        // a meaningful figure.
+        const stockRows = r.rows.map((row) => [row.product_name, row.category_name, row.on_hand, this.money(row.stock_value)]);
+        stockRows.push(['Grand Total', '', '', this.money(r.total_value)]);
         return [
           {
             title: 'Stock on Hand',
             head: ['Product', 'Category', 'On Hand', 'Stock Value'],
-            rows: r.rows.map((row) => [row.product_name, row.category_name, row.on_hand, this.money(row.stock_value)]),
+            rows: stockRows,
           },
         ];
       }
       case 'profit': {
         const r = this.profitReport();
         if (!r) return [];
-        // Per-product detail rows only, Summary card dropped - same scope
-        // as the other tabs above.
+        // Per-product detail rows, plus a Grand Total row - Qty Sold summed
+        // directly from the rows, Revenue/Cost/Profit from r.summary (same
+        // figures the cards above show).
+        const profitRows = r.rows.map((row) => [row.product_name, row.qty_sold, this.money(row.revenue), this.money(row.cost), this.money(row.profit)]);
+        const totalQtySold = r.rows.reduce((sum, row) => sum + (Number(row.qty_sold) || 0), 0);
+        profitRows.push(['Grand Total', totalQtySold, this.money(r.summary.revenue), this.money(r.summary.cost), this.money(r.summary.profit)]);
         return [
           {
             title: 'Profit by Product',
             head: ['Product', 'Qty Sold', 'Revenue', 'Cost', 'Profit'],
-            rows: r.rows.map((row) => [row.product_name, row.qty_sold, this.money(row.revenue), this.money(row.cost), this.money(row.profit)]),
+            rows: profitRows,
           },
         ];
       }
@@ -257,6 +318,28 @@ export class Reports implements OnInit {
             title: 'Net',
             head: [r.net_payable >= 0 ? 'Net GST Payable' : 'Net GST Credit Carried Forward'],
             rows: [[this.money(Math.abs(r.net_payable))]],
+          },
+        ];
+      }
+      case 'collection': {
+        const r = this.collectionReport();
+        if (!r) return [];
+        // Dynamic mode columns - only the modes actually seen in this date
+        // range get a column, same as the on-screen pivot table, plus a
+        // Total column and a final Total row so the export matches exactly
+        // what's on screen.
+        const head = ['Date', ...r.modes.map((m) => this.modeColumnLabel(m)), 'Total'];
+        const rows = r.days.map((day) => [
+          this.ddmmyyyy(day.date),
+          ...r.modes.map((m) => this.money(day.amounts[m])),
+          this.money(day.total),
+        ]);
+        rows.push(['Grand Total', ...r.modes.map((m) => this.money(r.mode_totals[m])), this.money(r.grand_total)]);
+        return [
+          {
+            title: 'Collection by Day and Payment Mode',
+            head,
+            rows,
           },
         ];
       }

@@ -171,17 +171,22 @@
     width: 4%;
   }
 
+  // SNo and GST % were shaved down to 4%/6% to help widen Item Particulars,
+  // but at print size (0.64rem, nowrap, uppercase, letter-spaced headers)
+  // that left both header labels wider than their own column and visually
+  // overlapping their neighbour - given back a point each (5%/7%, their
+  // original widths) since neither header fits any narrower. Item
+  // Particulars gives up the same two points it had taken from them.
   .col-sno {
-    width: 4%;
+    width: 5%;
   }
 
   // Client asked for more room for Item Particulars (product name + HSN/S-N
-  // meta line) - widened again from 42%, taking a point each off SNo, Rate,
-  // Qty and GST % (Amount is left alone - it needs to hold the largest
-  // realistic figures on the bill and was already the tightest of the
-  // number columns).
+  // meta line) - widened from 42%, taking width off SNo, Rate, Qty and GST %
+  // (Amount is left alone - it needs to hold the largest realistic figures
+  // on the bill and was already the tightest of the number columns).
   .col-particulars {
-    width: 46%;
+    width: 44%;
   }
 
   .col-rate {
@@ -193,7 +198,7 @@
   }
 
   .col-gst {
-    width: 6%;
+    width: 7%;
   }
 
   .col-amount {
@@ -539,17 +544,39 @@
 
 @media print {
   // The app's base line-height (1.5, in styles.scss) is comfortable for
-  // on-screen reading but wastes vertical space at these font sizes: 1.3
-  // is still noticeably roomier than tight single-spaced text, just not
-  // paying the full on-screen premium.
+  // on-screen reading but wastes vertical space at these font sizes: 1.2
+  // is still noticeably tighter than the on-screen premium, but no longer
+  // reads as cramped the way 1.08 did - client feedback on a real 1-item
+  // printed bill was that the text/fields were sitting too close together
+  // even though there was a lot of blank paper left below everything, so
+  // this (and the section-gap bumps throughout this block) trade a little
+  // of that spare page budget for legibility instead of leaving it unused.
   // NOTE: this budget also has to survive the browser's own print-dialog
   // "Headers and footers" option (it reserves extra space for a date/URL
   // line above and a page-number line below, on top of the @page margin
   // set here) - if a printed bill is ever right on the edge, turning that
   // browser option off is worth as much as any further CSS compaction.
+  //
+  // Follow-up 4 - real-world regression on a split-payment + balance-due
+  // bill (2 items, paid partly Cash/partly UPI, with a Balance Due line):
+  // every page-count test up to this point only ever used a plain,
+  // fully-paid cash invoice as the "2-item" case. That shape is actually
+  // shorter than a split-payment/balance-due one - a split bill prints one
+  // row per payment channel instead of a single "Paid" row, AND an extra
+  // "Balance Due" row on top, so .bill-grand-box alone can be 2 rows
+  // taller than anything tested so far. A real 2-item bill of that shape
+  // was reported spilling onto a second page even though this file's own
+  // 1rem/1.2-line-height settings had passed every previous regression
+  // test. Rather than just chase the one number that happened to be
+  // implicated, every recent spacing bump in this block was pulled back a
+  // bit to rebuild real safety margin for this taller invoice shape - not
+  // only for it, but for a still-unexplained gap between this sandbox's
+  // headless-Chromium print output and the client's real browser (see the
+  // architecture-plan.md note on this same follow-up). 1.15 is still
+  // visibly looser than the original 1.08 the client found cramped.
   .invoice-card,
   .invoice-card * {
-    line-height: 1.08;
+    line-height: 1.15;
   }
 
   .invoice-card {
@@ -600,14 +627,17 @@
   .bill-meta-row {
     font-size: 0.85rem;
     gap: 1.2rem;
-    margin-bottom: 0.18rem;
-    padding-bottom: 0.12rem;
+    // Trimmed back from 0.32rem/0.2rem (follow-up 4 - see the line-height
+    // rule's comment above for why) - still noticeably more room than the
+    // pre-session 0.18rem/0.12rem.
+    margin-bottom: 0.24rem;
+    padding-bottom: 0.15rem;
     border-bottom: 0.75pt solid #000;
   }
 
   .bill-to {
-    margin-bottom: 0.18rem;
-    padding-bottom: 0.12rem;
+    margin-bottom: 0.24rem;
+    padding-bottom: 0.15rem;
     border-bottom: 0.75pt solid #000;
   }
 
@@ -633,7 +663,7 @@
     // .no-print rule removes it from the column layout), so its 4% comes
     // back to Item Particulars here instead of going unused.
     .col-particulars {
-      width: 50%;
+      width: 48%;
     }
 
     th,
@@ -641,10 +671,13 @@
       // Horizontal padding kept tight - every pixel not spent on padding
       // here is a pixel handed back to the Item Particulars column, the one
       // column whose content (product name, HSN, IMEI/Serial) can
-      // genuinely run long. Vertical padding has a little more room since
-      // it only multiplies by the real row count (max 5, per
-      // Billing.MAX_CART_LINES), not by page width.
-      padding: 0.17rem 0.22rem;
+      // genuinely run long. Vertical padding gets real room since it only
+      // multiplies by the real row count (max 5, per Billing.MAX_CART_LINES),
+      // not by page width - bumped from 0.17rem since a client with a
+      // short 1-2 item bill said the row felt cramped, then eased back to
+      // 0.2rem (follow-up 4) to help rebuild safety margin for taller
+      // invoice shapes - see the line-height rule's comment above.
+      padding: 0.2rem 0.22rem;
     }
 
     thead th {
@@ -661,16 +694,27 @@
       // "this many empty lines' worth of space", same total space a
       // per-row version would use, without the extra horizontal rules a
       // separate <tr> per blank line would draw across it. The per-line
-      // figure (2rem) is sized to match one real item row's own height
-      // (a typical 2-line row: item-name + one HSN/S-N meta line, at this
-      // print block's font-size/line-height/padding) so the 5 row "slots"
-      // - real and blank - read as evenly sized, not as one undersized
-      // filler block tacked underneath differently-sized real rows. Only
-      // ever adds height for a bill with FEWER than 5 real items - which is
-      // exactly when there's spare page budget to spend - so this is safe:
-      // it can't push a full 5-item bill (blankRowCount() is 0 there) past
-      // the one-page guarantee.
-      height: calc(var(--blank-lines, 0) * 2rem);
+      // figure is sized to match one real item row's own height (a typical
+      // 2-line row: item-name + one HSN/S-N meta line, at THIS print
+      // block's current font-size/line-height/padding - measured directly
+      // via a rendered row's bounding box, ~2.45rem, not just carried over
+      // from an earlier round's spacing) so the row "slots" - real and
+      // blank - read as evenly sized, not as one undersized filler block
+      // tacked underneath differently-sized real rows. This whole blank
+      // block is a single <td> with one shared top/bottom padding (from the
+      // table's own th/td padding rule above), not one padding per blank
+      // line, so the plain "real row height * blank-line-count" math is
+      // always a couple of px off from a perfect match - 2.15rem was the
+      // best single constant across both realistic cases (1 and 2 missing
+      // rows, since MIN_PRINTED_ITEM_ROWS below is 3), measured against a
+      // real row's rendered bounding box rather than assumed. MIN_PRINTED_ITEM_ROWS
+      // (sale-detail.ts) is 3, so this only ever adds height for a bill
+      // with FEWER than 3 real items - exactly when there's spare page
+      // budget to spend - so it's safe: it can't push a 3+ item bill
+      // (blankRowCount() is 0 there) past the one-page guarantee. Re-measure
+      // this value if the item row's own font-size/padding/line-height ever
+      // change again - it will drift out of sync silently otherwise.
+      height: calc(var(--blank-lines, 0) * 2.15rem);
     }
   }
 
@@ -681,11 +725,14 @@
     // HSN/S-N line below it on the printed invoice - the 0.05rem this used
     // to be read as almost touching. Re-verified with the sandbox's 5-item
     // worst-case invoices (Playwright print-to-PDF + pypdf page count)
-    // before landing on this value - it's the largest gap that still keeps
-    // every invoice shape at its existing page count (1-3 item invoices
-    // stay one page; the 5-item worst cases were already 2 pages solely
+    // before landing on this value - it's a real gap that keeps every
+    // invoice shape at its existing page count (1-3 item invoices stay
+    // one page; the 5-item worst cases were already 2 pages solely
     // because of the signature-seal space, iteration log item 50 - this
-    // change doesn't add to that).
+    // change doesn't add to that). Eased back slightly from 0.3rem
+    // (follow-up 4) to help rebuild safety margin for taller invoice
+    // shapes - see the line-height rule's comment near the top of this
+    // block.
     margin-top: 0.22rem;
   }
 
@@ -709,7 +756,18 @@
   // fonts got bigger and the screen styles' 260px min-width no longer fit).
   .bill-summary-row {
     flex-wrap: nowrap;
-    margin-top: 0.2rem;
+    // Client asked for more separation from the items table just above -
+    // bumped from 0.35rem, then 0.65rem still read as too tight, then
+    // 1rem (1.2rem was tried too but pushed a real 2-item CASH invoice
+    // onto a second page). Follow-up 4: a real 2-item invoice with SPLIT
+    // payment + a Balance Due row - taller than any shape tested so far,
+    // since it prints extra rows in .bill-grand-box below - spilled to a
+    // second page even at 1rem. Eased back to 0.55rem: still clearly more
+    // breathing room than the original 0.35rem the client called too
+    // tight, but with real margin restored underneath it (see this
+    // block's other trims) instead of sitting right at the edge of a
+    // single invoice shape's test result.
+    margin-top: 0.55rem;
     gap: 0.35rem;
   }
 
@@ -723,7 +781,9 @@
 
     th,
     td {
-      padding: 0.12rem 0.2rem;
+      // Eased back from 0.2rem/0.25rem (follow-up 4, safety margin for
+      // taller split-payment/balance-due invoices - see .bill-summary-row).
+      padding: 0.15rem 0.2rem;
     }
 
     thead th {
@@ -733,12 +793,18 @@
 
   .bill-grand-box {
     flex: 0 0 165px;
-    padding: 0.18rem 0.3rem;
+    // Eased back from 0.28rem 0.35rem (follow-up 4).
+    padding: 0.2rem 0.3rem;
   }
 
+  // Padding here is spent once per row, and a split-payment invoice with a
+  // balance due prints one row per payment channel PLUS a Balance Due row
+  // - up to 2 rows more than the plain fully-paid cash invoice this block
+  // was originally tuned against. Trimmed from 0.08rem (follow-up 4) so
+  // that taller box doesn't quietly eat into the one-page budget.
   .grand-row {
     font-size: 0.7rem;
-    padding: 0.03rem 0;
+    padding: 0.05rem 0;
   }
 
   // Total Qty (left) and Grand Total (right) must stay side by side on one
@@ -746,9 +812,11 @@
   // Grand Total figure never pushes onto its own line underneath.
   .bill-qty-row {
     flex-wrap: nowrap;
-    margin-top: 0.12rem;
-    padding-top: 0.08rem;
-    padding-bottom: 0.15rem;
+    // Eased back from 0.25rem/0.15rem/0.22rem (follow-up 4, safety margin
+    // - see .bill-summary-row's comment above).
+    margin-top: 0.18rem;
+    padding-top: 0.1rem;
+    padding-bottom: 0.16rem;
     // A rule below this row too (matching the one already above it, from
     // the base .bill-qty-row style) - closes it off as its own line,
     // separating Total Qty/Grand Total from the terms text underneath.
@@ -765,26 +833,31 @@
   // above) and after the last numbered line (separating it from E&O.E and
   // the signature row below) - kept, but reined back in from the previous
   // round now that a bill is capped at 5 items (Billing.MAX_CART_LINES) and
-  // no longer needs to survive an unbounded worst case. Trimmed again
-  // (0.42rem -> 0.28rem) to help pay for a bigger gap above the signature
-  // row for the company seal - see .bill-signature-row's own comment.
+  // no longer needs to survive an unbounded worst case. Eased back again
+  // (follow-up 4, 0.42rem -> 0.3rem, and the numbered-line spacing
+  // 0.14rem -> 0.08rem) for safety margin on taller split-payment/
+  // balance-due invoices - see .bill-summary-row's comment above.
   .bill-terms {
-    margin-top: 0.28rem;
-    margin-bottom: 0.06rem;
+    margin-top: 0.3rem;
+    margin-bottom: 0.1rem;
     font-size: 0.62rem;
 
     ol {
-      margin: 0.15rem 0 0;
+      margin: 0.25rem 0 0;
       padding-left: 1rem;
     }
 
+    // Numbered terms lines used to sit almost touching (0.02rem) - client
+    // feedback on a real printed bill was that the whole invoice felt
+    // congested, and this list is the densest block of text on the page.
     li {
-      margin-bottom: 0.02rem;
+      margin-bottom: 0.08rem;
     }
   }
 
   .bill-terms-eoe {
-    margin-top: 0.12rem;
+    // Eased back from 0.2rem (follow-up 4).
+    margin-top: 0.15rem;
     font-size: 0.72rem;
   }
 
@@ -808,15 +881,49 @@
     margin-top: 6rem;
     padding-top: 0.1rem;
     font-size: 0.82rem;
+    // A real client report showed this row's own two-line shop name/label
+    // ("For RASI TIME CENTER /" / "MOBILES HOME APPLIANCES,") getting cut
+    // in half by a page break - the first line printed at the bottom of
+    // page 1, the second line alone at the top of page 2. That can happen
+    // even on an invoice that is otherwise a hair's breadth from fitting
+    // on one page, independent of the overall spacing budget elsewhere in
+    // this file - a plain block-level page break is free to land between
+    // any two child elements unless told not to. break-inside/
+    // page-break-inside: avoid (the modern and legacy spellings - browsers
+    // differ in which they honor) tells the printer to treat this whole
+    // row as one atomic unit: if it doesn't fit the remaining space on the
+    // current page, the WHOLE row moves to the next page together, rather
+    // than splitting mid-line. This costs nothing in vertical space (it
+    // only changes where a break can land, never how much room a rule
+    // takes up), so it can't regress the one-page-guarantee regression
+    // tests elsewhere in this file.
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .signature-box {
     min-width: 160px;
     padding-top: 0.12rem;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .bill-signature-shop-line + .bill-signature-shop-line {
     margin-top: 0.1rem;
+  }
+
+  // Same "don't split this in half" protection for the other blocks whose
+  // content reads as one unit - a single item row (name + HSN/serial meta
+  // line), and the totals box - so a borderline invoice never prints a
+  // half-row or a half-total-box across a page boundary either.
+  .tax-items-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .bill-grand-box {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }
 

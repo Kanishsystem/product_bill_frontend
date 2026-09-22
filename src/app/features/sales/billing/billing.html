@@ -112,17 +112,23 @@
         <label>Phone</label>
         <input type="text" [(ngModel)]="quickCustomerPhone" name="quick_phone" placeholder="Optional" />
       </div>
-      <div class="field">
+      <!-- <div class="field">
         <label>Email</label>
         <input type="email" [(ngModel)]="quickCustomerEmail" name="quick_email" placeholder="Optional" />
+      </div> -->
+      
+      <div class="field field-address">
+        <label>Address</label>
+        <textarea
+          rows="2"
+          [(ngModel)]="quickCustomerAddress"
+          name="quick_address"
+          placeholder="Optional"
+        ></textarea>
       </div>
       <div class="field">
         <label>GSTIN</label>
         <input type="text" [(ngModel)]="quickCustomerGstin" name="quick_gstin" placeholder="Optional" />
-      </div>
-      <div class="field field-address">
-        <label>Address</label>
-        <input type="text" [(ngModel)]="quickCustomerAddress" name="quick_address" placeholder="Optional" />
       </div>
       <button type="button" class="btn btn-secondary btn-sm" (click)="addQuickCustomer()">Add</button>
     </div>

@@ -140,15 +140,22 @@ export class SaleDetail implements OnInit {
   }
 
   /** How many blank "lines" of empty space to pad the printed items table
-   * with - previously matched the shop's old pre-printed bill book by always
-   * padding out to 5 rows, but the client asked for that bottom space gone
-   * (a 1-2 item bill was leaving a large empty block below the items table),
-   * so this is 0 for now: a short bill's printed items table is exactly as
-   * tall as its real items, nothing padded underneath. Left as a named
-   * constant (not deleted outright, and blankRowCount()/.blank-item-row
-   * below are both left in place) so the old bill-book look is one number
-   * away from coming back if the client changes their mind again. */
-  private static readonly MIN_PRINTED_ITEM_ROWS = 0;
+   * with. History: originally matched the shop's old pre-printed bill book
+   * by always padding out to 5 rows; the client then asked for that bottom
+   * space gone (a 1-2 item bill was leaving a large empty block below the
+   * items table), so this was set to 0 - a short bill's printed items table
+   * was exactly as tall as its real items, nothing padded underneath.
+   * Follow-up: after the spacing/safety-margin passes elsewhere in this
+   * file, the client compared a 3-item bill (which they liked) against a
+   * shorter one and asked for every bill to print at that SAME height,
+   * regardless of item count - i.e. the opposite ask from before: bring
+   * back padding, but calibrated to a shorter, tidier row count (3) instead
+   * of the old bill-book's 5. A bill with 4-5 items still prints at its own
+   * (taller) natural height - this only pads bills with FEWER than 3 items,
+   * which is exactly when there's spare page budget to spend, so it can't
+   * threaten the one-page guarantee (re-verified with the sandbox's
+   * Playwright print-to-PDF + pypdf page-count method). */
+  private static readonly MIN_PRINTED_ITEM_ROWS = 3;
 
   blankRowCount(): number {
     const count = (this.invoice()?.items ?? []).length;

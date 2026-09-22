@@ -206,6 +206,17 @@
   .field-address {
     flex: 1 1 240px;
     min-width: 220px;
+
+    // Client asked for the address to show on two lines instead of one
+    // long scrolling line - swapped the input for a 2-row textarea (see
+    // billing.html). No manual resize handle (a single-purpose address
+    // box, not a general free-form note field) and a line-height tuned so
+    // two lines of text sit comfortably without extra vertical padding.
+    textarea {
+      resize: none;
+      line-height: 1.35;
+      min-height: 2.7rem;
+    }
   }
 }
 

@@ -2,78 +2,255 @@
   <div class="topbar">
     <div class="mark">
       <span>Rasi Time Center</span>
-      <span>Mobiles &amp; Home Appliances</span>
+      <span>{{ t.nav.tagline }}</span>
     </div>
-    <a class="btn btn-primary" href="tel:+918526131313">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92Z"/></svg>
-      Call Now
-    </a>
+
+    <div class="topbar-right">
+      <div class="lang-switch" role="group" [attr.aria-label]="t.nav.langToggleLabel">
+        <button type="button" [class.active]="lang === 'en'" (click)="setLang('en')">EN</button>
+        <button type="button" [class.active]="lang === 'ta'" (click)="setLang('ta')">தமிழ்</button>
+      </div>
+      <a class="btn btn-primary" href="tel:+919751989898">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92Z"/></svg>
+        {{ t.nav.call }}
+      </a>
+    </div>
   </div>
 </header>
 
 <main>
   <!-- ================= HERO ================= -->
   <section class="hero" id="top">
-    <div class="hero-inner">
-      <div class="hero-copy">
-        <span class="store-badge">Welcome to our store</span>
-        <h1>Everything you need.<span class="line2">All in one place.</span></h1>
-        <p class="hero-tagline">Discover the latest mobiles and quality home appliances from RASI TIME CENTER — a trusted local showroom in Marakkanam, with a proper GST invoice on every single sale.</p>
-        <div class="hero-ctas">
-          <a class="btn btn-primary" href="#showcase">
-            Explore Our Products
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </a>
-          <a class="btn btn-ghost" href="#about">About Our Shop</a>
-        </div>
-        <div class="chips">
-          <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>GSTIN 33BEVPR0802PIZY</span>
-          <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>GST invoice on every sale</span>
-        </div>
+    <!-- Showroom hero photo, now the full-bleed BACKGROUND of the whole
+         banner (client asked to move it off the boxed right-hand card) -
+         `.hero-bg-inner` does the one-time scale/fade entrance, `.hero-bg-photo`
+         does the slow continuous breathing zoom, split across two elements
+         because a single element can't run two animations that both touch
+         `transform` at once (the second would just override the first every
+         frame, same reason the old two-layer wrap+photo split existed). The
+         `.hero-bg::after` scrim keeps the copy legible against whatever the
+         photo is doing underneath, using the page's own --paper token so it
+         still matches in dark mode. -->
+    <!-- Scene 1 of this same full-bleed background: the real showroom photo
+         above, unchanged. Scene 2 (home appliances) is .hero-bg-scene right
+         below it - there's no equivalent "showroom" photograph for
+         appliances to use here, so it's built the same way the corner
+         showcase is (real product photos + CSS/SVG glow rings and floating
+         motion) rather than a fabricated stock photo. Both are full-bleed
+         layers sharing this same .hero-bg box and crossfade between each
+         other - see startHeroShowcaseSequence() in landing.ts, the same
+         state machine already driving the corner showcase and the hero's
+         ambient glow tint, so all three change scene together. -->
+    <div class="hero-bg" aria-hidden="true">
+      <div class="hero-bg-inner is-active">
+        <picture>
+          <source
+            type="image/webp"
+            srcset="assets/hero/showroom-720.webp 720w, assets/hero/showroom-1100.webp 1100w, assets/hero/showroom-1600.webp 1600w, assets/hero/showroom-2400.webp 2400w"
+            sizes="100vw"
+          >
+          <img
+            class="hero-bg-photo"
+            src="assets/hero/showroom-1600.jpg"
+            srcset="assets/hero/showroom-720.jpg 720w, assets/hero/showroom-1100.jpg 1100w, assets/hero/showroom-1600.jpg 1600w, assets/hero/showroom-2400.jpg 2400w"
+            sizes="100vw"
+            width="2400"
+            height="1309"
+            alt=""
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          >
+        </picture>
       </div>
 
-      <!-- Decorative "showroom" composition - hand-drawn vector product tiles,
-           not stock photography (this page ships inside the billing app's own
-           build with no external image hosting), arranged like a small shelf
-           display with soft floating motion. -->
-      <div class="hero-visual" aria-hidden="true">
-        <div class="hv-blob hv-blob-a"></div>
-        <div class="hv-blob hv-blob-b"></div>
-        <div class="hv-ring"></div>
+      <div class="hero-bg-scene">
+        <div class="hero-bg-scene-glow"></div>
+        <svg class="hero-bg-scene-orbit hero-bg-scene-orbit--outer" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
+          <ellipse cx="100" cy="106" rx="94" ry="34" />
+        </svg>
+        <svg class="hero-bg-scene-orbit hero-bg-scene-orbit--inner" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
+          <ellipse cx="100" cy="100" rx="70" ry="24" />
+        </svg>
 
-        <div class="floater f-phone">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.4"/><path d="M11 18h2"/><path d="M9.5 5h5"/></svg>
+        <div class="hero-bg-scene-item hero-bg-scene-item--tv">
+          <div class="hero-bg-scene-item-inner">
+            <div class="hero-scroll-card is-tile">
+              <picture>
+                <source type="image/webp" srcset="assets/hero-showcase-appliances/tv.webp">
+                <img src="assets/hero-showcase-appliances/tv.png" alt="" loading="eager" decoding="async" width="320" height="320">
+              </picture>
+            </div>
+          </div>
         </div>
-        <div class="floater f-tv">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <div class="hero-bg-scene-item hero-bg-scene-item--ac">
+          <div class="hero-bg-scene-item-inner">
+            <div class="hero-scroll-card is-tile">
+              <picture>
+                <source type="image/webp" srcset="assets/hero-showcase-appliances/ac.webp">
+                <img src="assets/hero-showcase-appliances/ac.png" alt="" loading="eager" decoding="async" width="320" height="320">
+              </picture>
+            </div>
+          </div>
         </div>
-        <div class="floater f-watch">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="8" width="10" height="8" rx="2.2"/><path d="M9 8V5.6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V8M9 16v2.4a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V16"/></svg>
-        </div>
-        <div class="floater f-fridge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M6 9.5h12"/><path d="M9 4.6v2M9 12.2v2"/></svg>
-        </div>
-        <div class="floater f-buds">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="9" r="2.6"/><path d="M8.5 11.6v4.4a2 2 0 0 0 2 2"/><circle cx="16" cy="8" r="2.6"/><path d="M16 10.6V15"/></svg>
-        </div>
-        <div class="floater f-wash">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.4"/><circle cx="12" cy="13.5" r="5.2"/><circle cx="12" cy="13.5" r="2"/><path d="M7 6h.01M10 6h.01"/></svg>
+        <div class="hero-bg-scene-item hero-bg-scene-item--washing">
+          <div class="hero-bg-scene-item-inner">
+            <div class="hero-scroll-card is-tile">
+              <picture>
+                <source type="image/webp" srcset="assets/hero-showcase-appliances/washing-machine.webp">
+                <img src="assets/hero-showcase-appliances/washing-machine.png" alt="" loading="eager" decoding="async" width="320" height="320">
+              </picture>
+            </div>
+          </div>
         </div>
 
-        <span class="hv-tag hv-tag-new">New arrivals</span>
-        <span class="hv-tag hv-tag-gst">GST billed</span>
+        <div class="hero-bg-scene-badge hero-bg-scene-badge--wifi">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 8.5a11 11 0 0 1 14 0M8 12a6.5 6.5 0 0 1 8 0M11 15.5a2 2 0 0 1 2 0"/><circle cx="12" cy="18.2" r="0.9" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <div class="hero-bg-scene-badge hero-bg-scene-badge--eco">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4.5c-8 0-14 5-14 12.5 0 .7.05 1.35.15 2C13.5 19 20 13.5 20 4.5Z"/><path d="M6.4 19a13 13 0 0 1 4-6.5"/></svg>
+        </div>
       </div>
     </div>
+
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <span class="store-badge">{{ t.hero.badge }}</span>
+        <h1><span class="line1">{{ t.hero.titleLine1 }}</span><span class="line2">{{ t.hero.titleLine2 }}</span></h1>
+        <p class="hero-tagline">{{ t.hero.tagline }}</p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary" href="#showcase">
+            {{ t.hero.ctaPrimary }}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="#about">{{ t.hero.ctaSecondary }}</a>
+        </div>
+        <div class="chips">
+          <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>{{ t.hero.chipGstin }}</span>
+          <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>{{ t.hero.chipInvoice }}</span>
+        </div>
+      </div>
+
+      <!-- Real product photos the shop sent, animated one-at-a-time in the
+           hero's right-side empty area - see HERO_SHOWCASE_ITEMS /
+           APPLIANCE_SHOWCASE_ITEMS in landing.ts. Each "scene" (.hero-scroll-
+           category) is one product category; inside it, .hero-stage stacks
+           every one of that scene's photos on top of each other and shows
+           exactly one at a time (.hero-stage-item.is-active) - never all of
+           them at once. startHeroShowcaseSequence() in landing.ts is the
+           state machine driving all of this: it holds on one product for a
+           few seconds, crossfades to the next, and once a scene's products
+           are all shown, crossfades the whole scene (photos + its own glow
+           tint) over to the other category, looping forever. Every image
+           uses loading="eager" (not the usual lazy) precisely because it's
+           part of an animation the visitor doesn't scroll to - it needs to
+           already be loaded before its turn comes up, or it'd pop in empty.
+           Purely decorative/supplementary to the headline, so it's aria-
+           hidden; a screen reader gets the same information as a plain list
+           via .hero-scroll-sr instead. -->
+      <div class="hero-scroll" aria-hidden="true">
+        <div class="hero-scroll-mask">
+          <div class="hero-scroll-category is-active">
+            <div class="hero-scroll-glow"></div>
+            <div class="hero-stage">
+              @for (item of heroShowcaseItems; track item.key; let first = $first) {
+                <div class="hero-stage-item" [class.is-active]="first">
+                  <div class="hero-stage-item-inner">
+                    <div class="hero-scroll-card">
+                      <picture>
+                        <source type="image/webp" [srcset]="item.webp">
+                        <img [src]="item.png" [alt]="t.hero.showcaseItems[item.key]" loading="eager" decoding="async" width="320" height="320">
+                      </picture>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="hero-scroll-category hero-scroll-category--appliance">
+            <div class="hero-scroll-glow hero-scroll-glow--appliance"></div>
+            <div class="hero-stage">
+              @for (item of applianceShowcaseItems; track item.key; let first = $first) {
+                <div class="hero-stage-item" [class.is-active]="first">
+                  <div class="hero-stage-item-inner">
+                    <div class="hero-scroll-card is-tile">
+                      <picture>
+                        <source type="image/webp" [srcset]="item.webp">
+                        <img [src]="item.png" [alt]="t.hero.showcaseItems[item.key]" loading="eager" decoding="async" width="320" height="320">
+                      </picture>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="hero-scroll-sr sr-only">
+        {{ heroShowcaseItems.map(i => t.hero.showcaseItems[i.key]).join(', ') }},
+        {{ applianceShowcaseItems.map(i => t.hero.showcaseItems[i.key]).join(', ') }}
+      </p>
+    </div>
+
     <div class="hero-scroll-cue" aria-hidden="true"><span></span></div>
+  </section>
+
+  <!-- ================= TRUST STRIP ================= -->
+  <!-- Deliberately NOT a .reveal section: it sits directly under the hero,
+       close enough to the fold that gating it behind scroll-triggered
+       IntersectionObserver reveal (see Landing.setUpScrollReveal()) risks
+       showing as a blank gap until the visitor scrolls just past it -
+       exactly the failure mode documented for a full-page screenshot taken
+       without scrolling. Content this close to the top should just be
+       there, the same way the hero itself doesn't wait on scroll either. -->
+  <section class="trust-section wrap">
+    <span class="kicker trust-kicker">{{ t.trust.kicker }}</span>
+    <div class="trust-strip">
+      @for (item of t.trust.items; track $index) {
+        <div class="trust-item">
+          <span class="trust-value">{{ item.value }}</span>
+          <span class="trust-label">{{ item.label }}</span>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ================= OFFERS / ADS STRIP ================= -->
+  <!-- A structural placeholder: continuous auto-scrolling carousel, ready
+       for real promotional banner images/offer text once the shop sends
+       them - see the AD_ICONS/adItems comment in landing.ts. Pure-CSS
+       marquee (.ads-track in landing.scss), doubled strip like the product
+       showcase below, but with no scroll-position JS needed. -->
+  <section class="ads-strip wrap" id="offers">
+    <div class="ads-head">
+      <span class="kicker">{{ t.ads.kicker }}</span>
+      <h2>{{ t.ads.title }}</h2>
+    </div>
+    <div class="ads-track-wrap">
+      <div class="ads-track">
+        @for (item of adItems; track item.key) {
+          <div class="ad-card">
+            <div class="ad-art" [innerHTML]="item.icon"></div>
+            <span>{{ t.ads.labels[item.key] }}</span>
+          </div>
+        }
+        @for (item of adItems; track item.key) {
+          <div class="ad-card" aria-hidden="true">
+            <div class="ad-art" [innerHTML]="item.icon"></div>
+            <span>{{ t.ads.labels[item.key] }}</span>
+          </div>
+        }
+      </div>
+    </div>
   </section>
 
   <!-- ================= PRODUCT SHOWCASE / SCROLLER ================= -->
   <section class="showcase-section" id="showcase">
     <div class="wrap">
       <div class="section-head reveal">
-        <span class="kicker">Explore our products</span>
-        <h2>A showroom worth walking into</h2>
-        <p>A quick look at what's on the shelves — every category below is stocked, demonstrated and billed properly at the counter.</p>
+        <span class="kicker">{{ t.showcase.kicker }}</span>
+        <h2>{{ t.showcase.title }}</h2>
+        <p>{{ t.showcase.desc }}</p>
       </div>
     </div>
 
@@ -92,7 +269,7 @@
         @for (p of loopedProducts; track $index) {
           <div class="showcase-card">
             <div class="sc-art" [innerHTML]="p.icon"></div>
-            <h3>{{ p.name }}</h3>
+            <h3>{{ t.showcase.products[p.key] }}</h3>
           </div>
         }
       </div>
@@ -103,13 +280,13 @@
     </div>
 
     <div class="showcase-dots">
-      @for (p of products; track p.name; let i = $index) {
+      @for (p of products; track p.key; let i = $index) {
         <button
           type="button"
           class="dot"
           [class.active]="i === activeShowcaseIndex"
           (click)="goToShowcaseSlide(i)"
-          [attr.aria-label]="'Show ' + p.name"
+          [attr.aria-label]="t.showcase.showAria + ' ' + t.showcase.products[p.key]"
         ></button>
       }
     </div>
@@ -119,39 +296,90 @@
   <section class="wrap" id="about">
     <div class="about-grid">
       <div class="about-copy reveal">
-        <span class="kicker">About our shop</span>
-        <h2>A neighbourhood showroom, run the proper way</h2>
-        <p>RASI TIME CENTER has been Marakkanam's go-to stop for mobiles and home appliances — mobiles, TVs, refrigerators, washing machines and everyday accessories, all from one counter. No showroom theatrics, just genuine products, fair prices, and a bill you can actually use for warranty and service.</p>
+        <span class="kicker">{{ t.about.kicker }}</span>
+        <h2>{{ t.about.title }}</h2>
+
+        <div class="about-photo">
+          <picture>
+            <source
+              type="image/webp"
+              srcset="assets/about/showroom-interior-600.webp 600w, assets/about/showroom-interior-900.webp 900w, assets/about/showroom-interior-1376.webp 1376w"
+              sizes="(max-width: 640px) 92vw, (max-width: 980px) 70vw, 620px"
+            >
+            <img
+              src="assets/about/showroom-interior-900.jpg"
+              srcset="assets/about/showroom-interior-600.jpg 600w, assets/about/showroom-interior-900.jpg 900w, assets/about/showroom-interior-1376.jpg 1376w"
+              sizes="(max-width: 640px) 92vw, (max-width: 980px) 70vw, 620px"
+              width="1376"
+              height="768"
+              alt=""
+              loading="eager"
+              decoding="async"
+            >
+          </picture>
+        </div>
+
+        <p>{{ t.about.body }}</p>
         <div class="about-cats">
-          <span class="about-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>Mobiles</span>
-          <span class="about-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>TVs</span>
-          <span class="about-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><path d="M8 6h.01M12 6h.01"/></svg>Appliances</span>
-          <span class="about-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14a9 9 0 0 1 18 0"/><path d="M21 14v4a2 2 0 0 1-2 2h-1v-7h3ZM3 14v4a2 2 0 0 0 2 2h1v-7H3Z"/></svg>Accessories</span>
+          <span class="about-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>{{ t.about.cats.mobiles }}</span>
+          <span class="about-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>{{ t.about.cats.tvs }}</span>
+          <span class="about-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><path d="M8 6h.01M12 6h.01"/></svg>{{ t.about.cats.appliances }}</span>
+          <span class="about-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14a9 9 0 0 1 18 0"/><path d="M21 14v4a2 2 0 0 1-2 2h-1v-7h3ZM3 14v4a2 2 0 0 0 2 2h1v-7H3Z"/></svg>{{ t.about.cats.accessories }}</span>
         </div>
       </div>
 
       <div class="why-col">
-        <div class="why-card reveal" style="--reveal-i:0">
-          <div class="why-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></div>
-          <div>
-            <h3>Every sale, billed properly</h3>
-            <p>A GST tax invoice for every purchase — the paperwork you need for warranty claims is handed to you at the counter, not chased down later.</p>
+        @for (card of t.why; track $index; let i = $index) {
+          <div class="why-card dot-grid reveal" [style.--reveal-i]="i">
+            <div class="why-icon">
+              @switch (i) {
+                @case (0) {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
+                }
+                @case (1) {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14a9 9 0 0 1 18 0"/><path d="M21 14v4a2 2 0 0 1-2 2h-1v-7h3ZM3 14v4a2 2 0 0 0 2 2h1v-7H3Z"/></svg>
+                }
+                @default {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                }
+              }
+            </div>
+            <div>
+              <h3>{{ card.title }}</h3>
+              <p>{{ card.body }}</p>
+            </div>
           </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= HOW IT WORKS ================= -->
+  <section class="wrap" id="how-it-works">
+    <div class="section-head reveal">
+      <span class="kicker">{{ t.steps.kicker }}</span>
+      <h2>{{ t.steps.title }}</h2>
+      <p>{{ t.steps.desc }}</p>
+    </div>
+    <div class="steps-grid">
+      @for (step of t.steps.items; track $index; let i = $index) {
+        <div class="step-card dot-grid reveal" [style.--reveal-i]="i">
+          <span class="step-num">{{ i + 1 < 10 ? '0' + (i + 1) : (i + 1) }}</span>
+          <h3>{{ step.title }}</h3>
+          <p>{{ step.body }}</p>
         </div>
-        <div class="why-card reveal" style="--reveal-i:1">
-          <div class="why-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14a9 9 0 0 1 18 0"/><path d="M21 14v4a2 2 0 0 1-2 2h-1v-7h3ZM3 14v4a2 2 0 0 0 2 2h1v-7H3Z"/></svg></div>
-          <div>
-            <h3>One stop, less running around</h3>
-            <p>From a phone charger to a new washing machine, it's one shop and one familiar face behind the counter.</p>
-          </div>
-        </div>
-        <div class="why-card reveal" style="--reveal-i:2">
-          <div class="why-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
-          <div>
-            <h3>Clear pricing, no surprises</h3>
-            <p>Every bill shows the GST breakdown plainly, so the total you're quoted is the total you pay.</p>
-          </div>
-        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ================= CTA BANNER ================= -->
+  <section class="wrap">
+    <div class="cta-banner reveal">
+      <h2>{{ t.cta.title }}</h2>
+      <p>{{ t.cta.body }}</p>
+      <div class="cta-banner-ctas">
+        <a class="btn btn-cta" href="tel:+919751989898">{{ t.visit.callBtn }}</a>
+        <a class="btn btn-ghost btn-ghost-cta" href="https://www.google.com/maps/search/?api=1&query=No.5%2F2%2C%20Pondy%20Road%2C%20Marakkanam%20-%20604303%2C%20Tamil%20Nadu" target="_blank" rel="noopener">{{ t.visit.mapsBtn }}</a>
       </div>
     </div>
   </section>
@@ -160,23 +388,23 @@
   <section class="wrap" id="visit">
     <div class="visit reveal">
       <div class="visit-info">
-        <span class="kicker">Find us</span>
-        <h2>Visit the store</h2>
+        <span class="kicker">{{ t.visit.kicker }}</span>
+        <h2>{{ t.visit.title }}</h2>
         <div class="info-row">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6.5-9 12-9 12s-9-5.5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-          <div><span class="label">Address</span>No.5/2, Pondy Road, Marakkanam - 604303, Tamil Nadu</div>
+          <div><span class="label">{{ t.visit.addressLabel }}</span>No.5/2, Pondy Road, Marakkanam - 604303, Tamil Nadu</div>
         </div>
         <div class="info-row">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92Z"/></svg>
-          <div><span class="label">Phone</span>8526131313</div>
+          <div><span class="label">{{ t.visit.phoneLabel }}</span>9751989898</div>
         </div>
         <div class="info-row">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          <div><span class="label">Store timings</span>Call ahead to confirm today's hours.</div>
+          <div><span class="label">{{ t.visit.hoursLabel }}</span>{{ t.visit.hoursValue }}</div>
         </div>
         <div class="visit-ctas">
-          <a class="btn btn-primary" href="tel:+918526131313">Call the store</a>
-          <a class="btn btn-ghost" href="https://www.google.com/maps/search/?api=1&query=No.5%2F2%2C%20Pondy%20Road%2C%20Marakkanam%20-%20604303%2C%20Tamil%20Nadu" target="_blank" rel="noopener">Open in Maps</a>
+          <a class="btn btn-primary" href="tel:+919751989898">{{ t.visit.callBtn }}</a>
+          <a class="btn btn-ghost" href="https://www.google.com/maps/search/?api=1&query=No.5%2F2%2C%20Pondy%20Road%2C%20Marakkanam%20-%20604303%2C%20Tamil%20Nadu" target="_blank" rel="noopener">{{ t.visit.mapsBtn }}</a>
         </div>
       </div>
       <div class="map-card">
@@ -198,9 +426,9 @@
       <div class="foot-brand">
         <div class="foot-mark">
           Rasi Time Center
-          <span>Mobiles &amp; Home Appliances</span>
+          <span>{{ t.nav.tagline }}</span>
         </div>
-        <p class="foot-desc">Your trusted neighbourhood destination for mobiles and home appliances in Marakkanam — genuine products, straightforward pricing, and a proper GST invoice on every sale.</p>
+        <p class="foot-desc">{{ t.footer.desc }}</p>
         <div class="foot-social">
           <a href="#" class="social-btn" aria-label="Facebook" title="Facebook (add your page link)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3Z"/></svg>
@@ -208,29 +436,29 @@
           <a href="#" class="social-btn" aria-label="Instagram" title="Instagram (add your profile link)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4.2"/><path d="M17.5 6.5h.01"/></svg>
           </a>
-          <a href="https://wa.me/918526131313" class="social-btn" aria-label="WhatsApp" title="Chat on WhatsApp" target="_blank" rel="noopener">
+          <a href="https://wa.me/919751989898" class="social-btn" aria-label="WhatsApp" title="Chat on WhatsApp" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.36 7.57L3 20l1.02-5.4A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8.5 10.5c.3 2.4 2.6 4.7 5 5" stroke-linecap="round"/></svg>
           </a>
         </div>
       </div>
 
       <div class="foot-col">
-        <h4>Contact</h4>
-        <a href="tel:+918526131313">8526131313</a>
-        <a href="https://wa.me/918526131313" target="_blank" rel="noopener">WhatsApp us</a>
+        <h4>{{ t.footer.contactHeading }}</h4>
+        <a href="tel:+919751989898">9751989898</a>
+        <a href="https://wa.me/919751989898" target="_blank" rel="noopener">{{ t.footer.whatsapp }}</a>
         <span>GSTIN 33BEVPR0802PIZY</span>
       </div>
 
       <div class="foot-col">
-        <h4>Visit</h4>
+        <h4>{{ t.footer.visitHeading }}</h4>
         <span>No.5/2, Pondy Road,<br />Marakkanam - 604303, Tamil Nadu</span>
-        <span class="foot-hours">Call ahead to confirm today's hours</span>
+        <span class="foot-hours">{{ t.footer.hours }}</span>
       </div>
     </div>
 
     <div class="foot-bottom">
-      <span>&copy; {{ currentYear }} Rasi Time Center. All rights reserved.</span>
-      <span class="foot-tag">Billed with GST, every time.</span>
+      <span>&copy; {{ currentYear }} {{ t.footer.copyrightName }}</span>
+      <span class="foot-tag">{{ t.footer.tag }}</span>
     </div>
   </div>
 </footer>

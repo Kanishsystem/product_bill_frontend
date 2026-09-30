@@ -4,6 +4,7 @@ import { CompanyService } from '../../../core/services/company.service';
 import { ThemeService } from '../../../core/services/theme.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { extractErrorMessage } from '../../../core/utils/http-error';
+import { normalizePhones, PHONE_PLACEHOLDER } from '../../../core/utils/phone';
 import { CompanyProfile } from '../../../core/models/company.model';
 import { environment } from '../../../../environments/environment';
 
@@ -17,6 +18,7 @@ import { environment } from '../../../../environments/environment';
 export class CompanyProfileComponent implements OnInit, OnDestroy {
   loading = signal(true);
   saving = signal(false);
+  readonly phonePlaceholder = PHONE_PLACEHOLDER;
   form: Partial<CompanyProfile> = {};
 
   /** Uploading/removing the invoice heading image happens immediately on
@@ -144,6 +146,12 @@ export class CompanyProfileComponent implements OnInit, OnDestroy {
       this.toast.error('Shop name and GSTIN are required.');
       return;
     }
+    const phone = normalizePhones(this.form.phone);
+    if (phone.error) {
+      this.toast.error(phone.error);
+      return;
+    }
+    this.form.phone = phone.value ?? null;
     this.saving.set(true);
     this.companyService.update(this.form).subscribe({
       next: (res) => {

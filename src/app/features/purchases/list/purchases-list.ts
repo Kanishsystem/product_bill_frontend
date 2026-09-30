@@ -19,6 +19,7 @@ import { EmptyState } from '../../../shared/components/empty-state/empty-state';
 export class PurchasesList implements OnInit {
   purchases = signal<Purchase[]>([]);
   loading = signal(true);
+  search = '';
   fromDate = '';
   toDate = '';
 
@@ -34,7 +35,11 @@ export class PurchasesList implements OnInit {
   load(): void {
     this.loading.set(true);
     this.purchaseService
-      .list({ from_date: this.fromDate || undefined, to_date: this.toDate || undefined })
+      .list({
+        search: this.search.trim() || undefined,
+        from_date: this.fromDate || undefined,
+        to_date: this.toDate || undefined,
+      })
       .subscribe({
         next: (res) => {
           this.purchases.set(res.data ?? []);
@@ -48,6 +53,7 @@ export class PurchasesList implements OnInit {
   }
 
   clearFilters(): void {
+    this.search = '';
     this.fromDate = '';
     this.toDate = '';
     this.load();

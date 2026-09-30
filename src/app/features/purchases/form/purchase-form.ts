@@ -10,6 +10,7 @@ import { BrandService } from '../../../core/services/brand.service';
 import { UnitService } from '../../../core/services/unit.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { extractErrorMessage } from '../../../core/utils/http-error';
+import { normalizePhones, PHONE_PLACEHOLDER } from '../../../core/utils/phone';
 import { exGstFromInclusive, sellingPriceFromProfit } from '../../../core/utils/money';
 import { Product } from '../../../core/models/product.model';
 import { Party } from '../../../core/models/party.model';
@@ -117,6 +118,7 @@ export class PurchaseForm implements OnInit {
   showSupplierModal = signal(false);
   savingSupplierModal = signal(false);
   supplierModalForm = { name: '', phone: '', gstin: '', address: '' };
+  readonly phonePlaceholder = PHONE_PLACEHOLDER;
 
   showProductModal = signal(false);
   savingProductModal = signal(false);
@@ -356,12 +358,17 @@ export class PurchaseForm implements OnInit {
       this.toast.error('Supplier name is required.');
       return;
     }
+    const phone = normalizePhones(this.supplierModalForm.phone);
+    if (phone.error) {
+      this.toast.error(phone.error);
+      return;
+    }
     this.savingSupplierModal.set(true);
     this.partyService
       .create({
         party_type: 'supplier',
         name,
-        phone: this.supplierModalForm.phone.trim() || null,
+        phone: phone.value ?? null,
         gstin: this.supplierModalForm.gstin.trim() || null,
         address: this.supplierModalForm.address.trim() || null,
       })

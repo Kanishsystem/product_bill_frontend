@@ -10,6 +10,7 @@ import { PartyService } from '../../../core/services/party.service';
 import { CompanyService } from '../../../core/services/company.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { extractErrorMessage } from '../../../core/utils/http-error';
+import { normalizePhones, PHONE_PLACEHOLDER } from '../../../core/utils/phone';
 import { exGstFromInclusiveExact, inclusiveFromExGst } from '../../../core/utils/money';
 import { Product } from '../../../core/models/product.model';
 import { Party } from '../../../core/models/party.model';
@@ -155,6 +156,7 @@ export class Billing implements OnInit {
   showQuickCustomer = signal(false);
   quickCustomerName = '';
   quickCustomerPhone = '';
+  readonly phonePlaceholder = PHONE_PLACEHOLDER;
   quickCustomerEmail = '';
   quickCustomerGstin = '';
   quickCustomerAddress = '';
@@ -409,10 +411,15 @@ export class Billing implements OnInit {
       this.toast.error('Name is required.');
       return;
     }
+    const phone = normalizePhones(this.quickCustomerPhone);
+    if (phone.error) {
+      this.toast.error(phone.error);
+      return;
+    }
     this.partyService
       .quickCreate({
         name: this.quickCustomerName.trim(),
-        phone: this.quickCustomerPhone.trim() || undefined,
+        phone: phone.value ?? undefined,
         email: this.quickCustomerEmail.trim() || undefined,
         gstin: this.quickCustomerGstin.trim() || undefined,
         address: this.quickCustomerAddress.trim() || undefined,

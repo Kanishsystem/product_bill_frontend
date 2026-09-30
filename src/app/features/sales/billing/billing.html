@@ -110,7 +110,7 @@
       </div>
       <div class="field">
         <label>Phone</label>
-        <input type="text" [(ngModel)]="quickCustomerPhone" name="quick_phone" placeholder="Optional" />
+        <input type="text" inputmode="tel" [(ngModel)]="quickCustomerPhone" name="quick_phone" [placeholder]="phonePlaceholder" />
       </div>
       <!-- <div class="field">
         <label>Email</label>

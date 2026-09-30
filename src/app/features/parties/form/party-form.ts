@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PartyService } from '../../../core/services/party.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { extractErrorMessage } from '../../../core/utils/http-error';
+import { normalizePhones, PHONE_PLACEHOLDER } from '../../../core/utils/phone';
 import { Party, PartyType } from '../../../core/models/party.model';
 
 @Component({
@@ -17,6 +18,7 @@ export class PartyForm implements OnInit {
   partyId: number | null = null;
   loading = signal(false);
   saving = signal(false);
+  readonly phonePlaceholder = PHONE_PLACEHOLDER;
 
   form: {
     party_type: PartyType;
@@ -81,12 +83,17 @@ export class PartyForm implements OnInit {
       this.toast.error('Name is required.');
       return;
     }
+    const phone = normalizePhones(this.form.phone);
+    if (phone.error) {
+      this.toast.error(phone.error);
+      return;
+    }
     this.saving.set(true);
 
     const payload = {
       party_type: this.form.party_type,
       name: this.form.name.trim(),
-      phone: this.form.phone.trim() || null,
+      phone: phone.value ?? null,
       email: this.form.email.trim() || null,
       address: this.form.address.trim() || null,
       gstin: this.form.gstin.trim() || null,

@@ -13,7 +13,7 @@ import {
 export class PurchaseService {
   constructor(private api: ApiService) {}
 
-  list(filters?: { supplier_id?: number; from_date?: string; to_date?: string }) {
+  list(filters?: { supplier_id?: number; from_date?: string; to_date?: string; search?: string }) {
     return this.api.get<ApiResponse<Purchase[]>>('purchases/list', filters);
   }
 

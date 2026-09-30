@@ -10,6 +10,10 @@
 </div>
 
 <div class="card filter-bar">
+  <div class="field search-field">
+    <label>Search</label>
+    <input type="text" [(ngModel)]="search" (ngModelChange)="load()" placeholder="Supplier or invoice no..." />
+  </div>
   <div class="field">
     <label>From</label>
     <input type="date" [(ngModel)]="fromDate" (ngModelChange)="load()" />
@@ -18,7 +22,7 @@
     <label>To</label>
     <input type="date" [(ngModel)]="toDate" (ngModelChange)="load()" />
   </div>
-  @if (fromDate || toDate) {
+  @if (search || fromDate || toDate) {
     <button type="button" class="btn btn-secondary" (click)="clearFilters()">Clear</button>
   }
 </div>

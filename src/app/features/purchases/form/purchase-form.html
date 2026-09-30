@@ -378,7 +378,7 @@
         <div class="grid-2">
           <div class="field">
             <label for="sm_phone">Phone</label>
-            <input id="sm_phone" name="sm_phone" type="text" [(ngModel)]="supplierModalForm.phone" />
+            <input id="sm_phone" name="sm_phone" type="text" inputmode="tel" [(ngModel)]="supplierModalForm.phone" [placeholder]="phonePlaceholder" />
           </div>
           <div class="field">
             <label for="sm_gstin">GSTIN (optional)</label>

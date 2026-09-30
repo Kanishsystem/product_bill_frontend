@@ -30,6 +30,11 @@
   .field {
     margin-bottom: 0;
   }
+
+  .search-field {
+    flex: 1;
+    min-width: 220px;
+  }
 }
 
 .loading-text {

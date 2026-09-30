@@ -25,7 +25,7 @@
       </div>
       <div class="field">
         <label for="phone">Phone</label>
-        <input id="phone" name="phone" type="text" [(ngModel)]="form.phone" />
+        <input id="phone" name="phone" type="text" inputmode="tel" [(ngModel)]="form.phone" [placeholder]="phonePlaceholder" />
       </div>
       <div class="field">
         <label for="email">Email</label>

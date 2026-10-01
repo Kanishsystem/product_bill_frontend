@@ -8,11 +8,11 @@ export const routes: Routes = [
     pathMatch: 'full',
     loadComponent: () => import('./features/landing-new/landing-new').then((m) => m.LandingNew),
   },
-  // {
-  //   path: '',
-  //   pathMatch: 'full',
-  //   loadComponent: () => import('./features/landing/landing').then((m) => m.Landing),
-  // },
+  {
+    path: 'landing',
+    // pathMatch: 'full',
+    loadComponent: () => import('./features/landing/landing').then((m) => m.Landing),
+  },
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),

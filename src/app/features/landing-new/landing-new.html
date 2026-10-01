@@ -1,1 +1,173 @@
-<p>landing-new works!</p>
+<header class="site-header">
+	<a class="brand" href="#top" aria-label="Rasi Time Center home">
+		<span class="brand-mark" aria-hidden="true">R</span>
+		<span class="brand-copy"><strong>Rasi Time Center</strong><small>{{ copy().tagline }}</small></span>
+	</a>
+
+	<nav class="main-nav" aria-label="Main navigation">
+		<a href="#products">{{ copy().navProducts }}</a>
+		<a href="#about">{{ copy().navAbout }}</a>
+		<a href="#visit">{{ copy().navVisit }}</a>
+	</nav>
+
+	<div class="header-actions">
+		<div class="language-switch" role="group" [attr.aria-label]="copy().language">
+			<button type="button" [class.active]="language() === 'en'" [attr.aria-pressed]="language() === 'en'" (click)="setLanguage('en')">EN</button>
+			<button type="button" [class.active]="language() === 'ta'" [attr.aria-pressed]="language() === 'ta'" (click)="setLanguage('ta')">தமிழ்</button>
+		</div>
+		<div class="theme-switch" role="group" [attr.aria-label]="copy().theme">
+			<button type="button" class="theme-swatch red-swatch" [class.active]="theme() === 'red'" [attr.aria-label]="copy().redTheme" [attr.aria-pressed]="theme() === 'red'" (click)="setTheme('red')"></button>
+			<button type="button" class="theme-swatch berry-swatch" [class.active]="theme() === 'berry'" [attr.aria-label]="copy().berryTheme" [attr.aria-pressed]="theme() === 'berry'" (click)="setTheme('berry')"></button>
+		</div>
+		<a class="header-call" href="tel:+918526131313">{{ copy().call }}</a>
+	</div>
+</header>
+
+<main class="editorial-page" id="top">
+	<section class="hero" aria-labelledby="hero-title">
+		<div class="hero-layout">
+			<div class="hero-copy">
+				<span class="store-badge">{{ copy().welcome }}</span>
+				<h1 id="hero-title">{{ copy().headline.split('\n')[0] }}<br><span>{{ copy().headline.split('\n')[1] }}</span></h1>
+				<p class="hero-tagline">{{ copy().intro }}</p>
+				<div class="hero-ctas">
+					<a class="btn btn-primary" href="#products">{{ copy().explore }} <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+					<a class="btn btn-ghost" href="#about">{{ copy().about }}</a>
+				</div>
+				<div class="chips">
+					<span class="chip"><svg view
+						Box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>{{ copy().gst }}</span>
+					<span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>{{ copy().invoice }}</span>
+				</div>
+			</div>
+
+			<div class="hero-gallery" [attr.aria-label]="copy().heroGallery">
+				<div class="gallery-stage" aria-live="off">
+					@for (slide of heroSlides; track slide.position; let index = $index) {
+						<figure class="gallery-slide" [class.active]="activeHeroSlide() === index" [class.gallery-slide--showroom]="index === 0" [attr.aria-hidden]="activeHeroSlide() !== index">
+							<img [src]="slide.image" [alt]="copy().heroSlideLabels[index]" [attr.fetchpriority]="index === 0 ? 'high' : 'auto'" [attr.loading]="index === 0 ? 'eager' : 'lazy'" decoding="async" width="900" height="600">
+						</figure>
+					}
+					<div class="gallery-stamp" aria-hidden="true"><span>R</span><small>Rasi Time<br>Center</small></div>
+				</div>
+				<div class="gallery-caption" aria-live="polite"><strong>{{ copy().heroSlideLabels[activeHeroSlide()] }}</strong></div>
+				<div class="gallery-controls" role="group" [attr.aria-label]="copy().heroGallery">
+					<span class="gallery-counter">0{{ activeHeroSlide() + 1 }} <span>/ 0{{ heroSlides.length }}</span></span>
+					<div class="gallery-dots">
+						@for (slide of heroSlides; track slide.position; let index = $index) {
+							<button type="button" [class.active]="activeHeroSlide() === index" [attr.aria-label]="copy().heroSlideLabels[index]" [attr.aria-pressed]="activeHeroSlide() === index" (click)="setHeroSlide(index)"></button>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section class="collection-section" id="products" aria-labelledby="collection-title">
+		<div class="collection-heading">
+			<div>
+				<p class="eyebrow">{{ copy().collectionEyebrow }}</p>
+				<h2 id="collection-title">{{ copy().collectionTitle }}</h2>
+			</div>
+			<p>{{ copy().collectionText }}</p>
+		</div>
+		<div class="collection-grid">
+			@for (product of collectionProducts; track product.position; let index = $index) {
+				<article class="collection-card" [class.collection-card--featured]="index === 0">
+					<div class="collection-card__visual">
+						<img [src]="product.image" [alt]="copy().categories[index]" loading="lazy" width="320" height="320">
+					</div>
+					<div class="collection-card__copy">
+						<span class="collection-card__number" aria-hidden="true">0{{ index + 1 }}</span>
+						<span class="collection-card__eyebrow">{{ copy().collectionHighlights[index] }}</span>
+						<h3>{{ copy().categories[index] }}</h3>
+						<p>{{ copy().collectionDescriptions[index] }}</p>
+						@if (product.position === 'table-fan') {
+							<a class="collection-image-credit" href="https://commons.wikimedia.org/wiki/File:Table_fan_FT-1201_II_30_cm_9186.jpg" target="_blank" rel="noreferrer">Photo: Gunnar Creutz / CC BY-SA 4.0</a>
+						}
+					</div>
+				</article>
+			}
+		</div>
+	</section>
+
+	<section class="section-wrap promise-band" [attr.aria-label]="copy().promiseEyebrow">
+		<div class="promise-copy">
+			<p class="eyebrow">{{ copy().promiseEyebrow }}</p>
+			<h2>{{ copy().promiseTitle }}</h2>
+			<p>{{ copy().promiseText }}</p>
+		</div>
+		<div class="promise-list">
+			<article>
+				<span>01</span>
+				<h3>{{ copy().promiseReasonOneTitle }}</h3>
+				<p>{{ copy().promiseReasonOneText }}</p>
+			</article>
+			<article>
+				<span>02</span>
+				<h3>{{ copy().promiseReasonTwoTitle }}</h3>
+				<p>{{ copy().promiseReasonTwoText }}</p>
+			</article>
+			<article>
+				<span>03</span>
+				<h3>{{ copy().promiseReasonThreeTitle }}</h3>
+				<p>{{ copy().promiseReasonThreeText }}</p>
+			</article>
+		</div>
+	</section>
+
+	<section class="story-band" id="about">
+		<div class="story-copy">
+			<p class="eyebrow">{{ copy().storyEyebrow }}</p>
+			<h2>{{ copy().storyTitle }}</h2>
+			<p>{{ copy().storyText }}</p>
+			<a class="button button-outline" href="#visit">{{ copy().navVisit }} <span aria-hidden="true">→</span></a>
+		</div>
+		<div class="story-stats" aria-label="Store highlights">
+			<div>
+				<strong>01</strong>
+				<span>{{ copy().featureOneTitle }}</span>
+			</div>
+			<div>
+				<strong>02</strong>
+				<span>{{ copy().featureTwoTitle }}</span>
+			</div>
+			<div>
+				<strong>03</strong>
+				<span>{{ copy().featureThreeTitle }}</span>
+			</div>
+		</div>
+	</section>
+
+	<section class="visit-band" id="visit">
+		<div class="visit-layout">
+			<div class="visit-content">
+				<div class="visit-heading">
+					<p class="eyebrow">{{ copy().visitEyebrow }}</p>
+					<h2>{{ copy().visitTitle }}</h2>
+				</div>
+				<p class="visit-intro">{{ copy().visitText }}</p>
+				<div class="visit-details">
+					<div class="visit-detail">
+						<span class="visit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+						<div><span class="visit-label">{{ copy().addressLabel }}</span><p>{{ copy().address }}</p></div>
+					</div>
+					<div class="visit-detail">
+						<span class="visit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3H4a1 1 0 0 0-1 1c0 9.4 7.6 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 3a14 14 0 0 1-7-7l3-2-3-6Z"/></svg></span>
+						<div><span class="visit-label">{{ copy().phoneLabel }}</span><p><a href="tel:+918526131313">8526131313</a></p></div>
+					</div>
+				</div>
+				<a class="button button-dark" [href]="mapUrl" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>{{ copy().openMaps }}</a>
+			</div>
+			<div class="visit-map">
+				<iframe [src]="mapEmbedUrl" [title]="copy().mapTitle" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+			</div>
+		</div>
+	</section>
+</main>
+
+<footer class="site-footer">
+	<a class="footer-brand" href="#top">Rasi Time Center</a>
+	<p>{{ copy().footer }}</p>
+	<span>© {{ year }} Rasi Time Center</span>
+</footer>
